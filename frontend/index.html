@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Dashboard</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #f0f4f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        .navbar {
+            background: #0057b3;
+            padding: 15px 25px;
+            color: white;
+            font-size: 22px;
+        }
+
+        .container {
+            width: 450px;
+            margin: auto;
+            margin-top: 70px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0px 0px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        h2 {
+            margin: 0;
+            margin-bottom: 15px;
+        }
+
+        button {
+            width: 80%;
+            padding: 12px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            margin-top: 12px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background: #005dc1;
+        }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    Welcome, <span id="studentName">Student</span>
+</div>
+
+<div class="container">
+
+    <div class="card">
+        <h2>Student Dashboard</h2>
+        <p>Select a service to continue</p>
+
+        <button onclick="goToComplaint()">Submit a New Complaint</button>
+        <button onclick="goToStatus()">Check Request Status</button>
+        <button onclick="goToHistory()">My Previous Complaints</button>
+    </div>
+
+</div>
+
+<script>
+// ❗ Load logged-in student name from localStorage
+document.getElementById("studentName").innerText =
+    localStorage.getItem("student_name") || "Student";
+
+function goToComplaint() {
+    window.location.href = "complaint.html";
+}
+
+function goToStatus() {
+    window.location.href = "status.html";
+}
+
+function goToHistory() {
+    window.location.href = "history.html";
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Login</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #eef2f3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .box {
+            width: 350px;
+            padding: 25px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        input, button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 12px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #005dc1;
+        }
+        .msg {
+            margin-top: 15px;
+            padding: 10px;
+            display: none;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <h2 style="text-align:center;">Student Login</h2>
+
+    <input type="text" id="sid" placeholder="Enter Student ID">
+    <input type="password" id="password" placeholder="Enter Password">
+
+    <button onclick="login()">Login</button>
+
+    <div id="msg" class="msg"></div>
+</div>
+
+<script>
+function login() {
+    let sid = document.getElementById("sid").value;
+    let pwd = document.getElementById("password").value;
+    let msgBox = document.getElementById("msg");
+
+    fetch("http://127.0.0.1:5000/login", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            student_id: sid,
+            password: pwd
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        msgBox.style.display = "block";
+
+        if (data.status === "success") {
+            msgBox.style.background = "#d4ffd4";
+            msgBox.innerHTML = "✔ " + data.message + "<br>Welcome " + data.name;
+
+            // Redirect after login success
+            setTimeout(() => {
+                window.location.href = "index.html";
+            }, 1200);
+
+        } else {
+            msgBox.style.background = "#ffd4d4";
+            msgBox.innerHTML = "❌ " + data.message;
+        }
+    });
+}
+function loginUser() {
+    let id = document.getElementById("student_id").value;
+    let pass = document.getElementById("password").value;
+
+    fetch("/login", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ student_id: id, password: pass })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            localStorage.setItem("student_id", id);
+            window.location.href = "index.html";
+        } else {
+            alert("Invalid ID or password");
+        }
+    });
+}
+
+</script>
+
+</body>
+</html>

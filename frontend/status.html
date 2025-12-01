@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Check Complaint Status</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #eef2f3;
+            margin: 0;
+            padding: 0;
+        }
+
+        .navbar {
+            background: #0057b3;
+            padding: 15px 25px;
+            color: white;
+            font-size: 20px;
+        }
+
+        .container {
+            width: 480px;
+            margin: auto;
+            margin-top: 40px;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0px 0px 12px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            margin-top: 10px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #005dc1;
+        }
+
+        .result-box {
+            margin-top: 20px;
+            padding: 18px;
+            background: #e9f4ff;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .back-btn {
+            width: 100%;
+            padding: 12px;
+            background: #444;
+            color: white;
+            margin-top: 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            border: none;
+        }
+        .back-btn:hover {
+            background: #222;
+        }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    Check Complaint Status — <span id="studentName"></span>
+</div>
+
+<div class="container">
+    <h2>Track Your Complaint</h2>
+
+    <input id="reqID" placeholder="Enter your Request ID">
+
+    <button onclick="checkStatus()">Check Status</button>
+
+    <button class="back-btn" onclick="goBack()">Back to Dashboard</button>
+
+    <div id="result" class="result-box"></div>
+</div>
+
+<script>
+// load student name from storage
+document.getElementById("studentName").innerText =
+    localStorage.getItem("student_name") || "Student";
+
+// Fetch complaint status
+function checkStatus() {
+    let id = document.getElementById("reqID").value.trim();
+    let box = document.getElementById("result");
+
+    if (id === "") {
+        alert("Please enter a Request ID.");
+        return;
+    }
+
+    fetch(`http://127.0.0.1:5000/get_status?id=${id}`)
+    .then(res => res.json())
+    .then(data => {
+        box.style.display = "block";
+
+        if (data.error) {
+            box.innerHTML = `<b style="color:red;">${data.error}</b>`;
+            return;
+        }
+
+        box.innerHTML = `
+            <h3>Status Details</h3>
+
+            <b>Query:</b> ${data.query}<br>
+            <b>Category:</b> ${data.category}<br>
+            <b>Technician:</b> ${data.technician || "Not assigned"}<br>
+            <b>Status:</b> <span style="color:blue;">${data.status}</span><br>
+
+            <hr>
+
+            <small>Use this page anytime to track your complaint.</small>
+        `;
+    })
+    .catch(err => {
+        box.style.display = "block";
+        box.innerHTML = "<b>Error fetching status. Make sure backend is running.</b>";
+    });
+}
+
+function goBack() {
+    window.location.href = "home.html";
+}
+</script>
+
+</body>
+</html>

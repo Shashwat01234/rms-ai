@@ -1,0 +1,5 @@
+name,role,start_time,end_time,current_load,status,password
+Ravi,electrician,10:00,18:00,0,free,123
+Suresh,plumber,9:00,17:00,0,free,123
+Aman,carpenter,8:00,16:00,0,free,123
+Neha,painter,11:00,19:00,0,free,123

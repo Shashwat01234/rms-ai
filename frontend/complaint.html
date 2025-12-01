@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Submit Complaint</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #eef2f3;
+            margin: 0;
+            padding: 0;
+        }
+
+        .navbar {
+            background: #0057b3;
+            padding: 15px 25px;
+            color: white;
+            font-size: 20px;
+        }
+
+        .container {
+            width: 480px;
+            margin: auto;
+            margin-top: 40px;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0px 0px 12px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            margin-top: 10px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #0069ff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0054cc;
+        }
+
+        .result-box {
+            margin-top: 20px;
+            background: #e9f4ff;
+            padding: 18px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .back-btn {
+            width: 100%;
+            padding: 12px;
+            background: #444;
+            color: white;
+            margin-top: 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            border: none;
+        }
+        .back-btn:hover {
+            background: #222;
+        }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    Submit Complaint — <span id="studentName"></span>
+</div>
+
+<div class="container">
+    <h2>Describe Your Issue</h2>
+
+    <textarea id="query" placeholder="Example: fan not working, I am free after 4pm"></textarea>
+
+    <button onclick="submitQuery()">Submit</button>
+
+    <button class="back-btn" onclick="goBack()">Back to Dashboard</button>
+
+    <div id="result" class="result-box"></div>
+</div>
+
+<script>
+// Display student name
+document.getElementById("studentName").innerText =
+    localStorage.getItem("student_name") || "Student";
+
+// Submit complaint to Flask API
+function submitQuery() {
+    let text = document.getElementById("query").value;
+    let box = document.getElementById("result");
+
+    if (text.trim() === "") {
+        alert("Please enter your complaint.");
+        return;
+    }
+
+    fetch("http://127.0.0.1:5000/submit_request", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            student_id: localStorage.getItem("student_id"),
+            query: text
+})
+
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        box.style.display = "block";
+
+        box.innerHTML = `
+            <h3>Complaint Submitted ✔</h3>
+
+            <b>Category:</b> ${data.category}<br>
+            <b>Technician:</b> ${data.technician || "Not assigned"}<br>
+            <b>Availability:</b> ${data.start_time || "-"} to ${data.end_time || "-"}<br>
+            <b>Status:</b> ${data.status}<br>
+            <b>Request ID:</b> ${data.request_id}<br>
+
+            <hr>
+
+            <small style="color:#444;">Use the Request ID to check the status later.</small>
+        `;
+    })
+    .catch(err => {
+        box.style.display = "block";
+        box.innerHTML = "<b>Error submitting complaint. Make sure backend is running.</b>";
+    });
+}
+
+function goBack() {
+    window.location.href = "home.html";
+}
+</script>
+
+</body>
+</html>

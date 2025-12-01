@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Technician Dashboard</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #eef2f3;
+        }
+        .navbar {
+            background: #333;
+            color: white;
+            padding: 15px;
+            font-size: 22px;
+        }
+        .container {
+            width: 800px;
+            margin: auto;
+            margin-top: 30px;
+        }
+        .card {
+            background: white;
+            padding: 18px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0 0 12px rgba(0,0,0,0.1);
+        }
+        select, button {
+            padding: 6px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    Technician Dashboard — <span id="techName"></span>
+</div>
+
+<div class="container" id="taskContainer">
+    <h2>Loading assigned tasks...</h2>
+</div>
+
+<script>
+document.getElementById("techName").innerText =
+    localStorage.getItem("tech_name");
+
+let techName = localStorage.getItem("tech_name");
+
+function loadTasks() {
+    fetch(`http://127.0.0.1:5000/technician/get_tasks?name=${techName}`)
+    .then(res => res.json())
+    .then(data => {
+        let box = document.getElementById("taskContainer");
+        box.innerHTML = "";
+
+        if (data.length === 0) {
+            box.innerHTML = "<h3>No tasks assigned.</h3>";
+            return;
+        }
+
+        data.forEach(t => {
+            box.innerHTML += `
+                <div class="card">
+                    <b>Request ID:</b> ${t.request_id}<br>
+                    <b>Query:</b> ${t.query}<br>
+                    <b>Status:</b> ${t.status}<br>
+                    <br>
+                    <select id="status_${t.request_id}">
+                        <option value="pending">Pending</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="resolved">Resolved</option>
+                    </select>
+
+                    <button onclick="updateTask('${t.request_id}')">Update</button>
+                </div>
+            `;
+        });
+    });
+}
+
+function updateTask(id) {
+    let newStatus = document.getElementById(`status_${id}`).value;
+
+    fetch("http://127.0.0.1:5000/technician/update_task", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            request_id: id,
+            status: newStatus,
+            technician: techName
+        })
+    })
+    .then(res => res.json())
+    .then(() => {
+        alert("Status updated!");
+        loadTasks();
+    });
+}
+
+loadTasks();
+</script>
+
+</body>
+</html>

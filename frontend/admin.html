@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #eef2f3;
+        }
+        .navbar {
+            background: #222;
+            color: white;
+            padding: 15px;
+            font-size: 22px;
+        }
+        .container {
+            width: 95%;
+            margin: auto;
+            margin-top: 20px;
+        }
+        h2 { margin-top: 40px; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            margin-top: 15px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0px 0px 12px rgba(0,0,0,0.1);
+        }
+        table th, table td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+        table th {
+            background: #0057b3;
+            color: white;
+        }
+        select, button {
+            padding: 6px 10px;
+            margin-top: 5px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 6px;
+        }
+        button:hover {
+            background: #005dc1;
+        }
+        .section {
+            background: white;
+            padding: 20px;
+            margin-top: 25px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 12px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+
+<div class="navbar">Admin Dashboard</div>
+
+<div class="container">
+
+    <!-- REQUEST TABLE -->
+    <div class="section">
+        <h2>All Complaints</h2>
+        <table id="reqTable">
+            <thead>
+                <tr>
+                    <th>Request ID</th>
+                    <th>Student ID</th>
+                    <th>Query</th>
+                    <th>Category</th>
+                    <th>Technician</th>
+                    <th>Status</th>
+                    <th>Update</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- TECHNICIAN WORKLOAD -->
+    <div class="section">
+        <h2>Technician Workload</h2>
+        <table id="techTable">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Current Load</th>
+                    <th>Shift</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+// =========================
+// LOAD ALL COMPLAINTS
+// =========================
+function loadRequests() {
+    fetch("http://127.0.0.1:5000/admin/get_all_requests")
+    .then(res => res.json())
+    .then(data => {
+        let tbody = document.querySelector("#reqTable tbody");
+        tbody.innerHTML = "";
+
+        data.forEach(row => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${row.request_id}</td>
+                    <td>${row.student_id}</td>
+                    <td>${row.query}</td>
+                    <td>${row.category}</td>
+                    <td>${row.technician || "-"}</td>
+                    <td>${row.status}</td>
+                    <td>
+                        <select id="status_${row.request_id}">
+                            <option value="pending">Pending</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="resolved">Resolved</option>
+                        </select>
+                        <button onclick="updateStatus('${row.request_id}')">Save</button>
+                    </td>
+                </tr>
+            `;
+        });
+    });
+}
+
+// =========================
+// UPDATE STATUS
+// =========================
+function updateStatus(id) {
+    let newStatus = document.getElementById(`status_${id}`).value;
+
+    fetch("http://127.0.0.1:5000/admin/update_status", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            request_id: id,
+            status: newStatus
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert("Status updated successfully!");
+        loadRequests();
+    });
+}
+
+// =========================
+// LOAD TECHNICIAN INFO
+// =========================
+function loadTechnicians() {
+    fetch("http://127.0.0.1:5000/admin/get_technicians")
+    .then(res => res.json())
+    .then(data => {
+        let tbody = document.querySelector("#techTable tbody");
+        tbody.innerHTML = "";
+
+        data.forEach(row => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${row.name}</td>
+                    <td>${row.role}</td>
+                    <td>${row.status}</td>
+                    <td>${row.current_load}</td>
+                    <td>${row.start_time} - ${row.end_time}</td>
+                </tr>
+            `;
+        });
+    });
+}
+
+// Load everything
+loadRequests();
+loadTechnicians();
+</script>
+
+</body>
+</html>

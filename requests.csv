@@ -1,0 +1,20 @@
+request_id,student_id,query,category,technician,start_time,end_time,assigned_time,student_free_time,status
+803caa2f-4f5b-4b1d-9d46-d0400262b613,,fan not workingg i am free at 2pm,Hostel,Ravi,10:00,18:00,14,14,resolved
+e0f9599a-91ae-46b0-87fa-b6b80b1812b9,,fan not workingg i am free at 3pm,Hostel,Ravi,10:00,18:00,15,15,resolved
+55555405-982f-4013-b590-c11e9235da16,,air conditioner not workingg i am free at 3pm,Hostel,Ravi,10:00,18:00,15,15,resolved
+dcf37893-ccf1-4071-9894-ea010634bbaf,,fan not workingg i am free 2pm,Hostel,Ravi,10:00,18:00,14,14,resolved
+8664808a-bf83-4533-b901-7f1f014fdb1d,,send moni plej no moni,Academic,,,,,,resolved
+e2d47f8e-846b-48e2-99ab-2366bb4eddb6,,send elektricity plej fast rn,Academic,,,,,,resolved
+959c1636-239e-4868-93c9-6f435e45d471,,send eletricity plej fast rn,Academic,,,,,,resolved
+c59461c6-6cfc-4bf5-a565-647877a81d99,,send eletricity plej fast rn,Academic,,,,,,resolved
+ff4d21ef-ef7f-4c9c-ba06-e5ab5f31319b,,send eletricity please fast rn,Academic,,,,,,resolved
+d287d634-b396-40dc-97ff-9b71494e4a52,,send eletricity please fast rn,Academic,,,,,,resolved
+ce70e735-b55f-40d7-92b2-eb5415996276,,send eletricity please,Academic,,,,,,resolved
+190d3e20-b951-4955-afd9-a37331a814f0,,send eletricity please,Academic,,,,,,resolved
+72a65fcb-933b-415d-b801-4147ce6e0932,,no eletricity,Academic,,,,,,resolved
+09bf65a6-3a00-447a-89e2-7b09224e0942,,no eletricity,Academic,,,,,,resolved
+4661472f-bc6a-4dc8-9a21-6854642a994b,,fan not workingg i am free ata 4pm,Hostel,,,,16,16,resolved
+a07f4931-529c-45e7-be49-90ea0227d00e,fan not workingg,Hostel,electrician,pending,,,,,resolved
+a0f7f0d0-1c4d-44cf-863f-564225ceeb5a,,fan not workingg i am free at 4pm,Hostel,,,,16,16,resolved
+366574a6-f88c-40a9-bc18-ad051f8ea149,,fan not workingg i am free 3pm,Hostel,Ravi,10:00,18:00,15,15,resolved
+0ad910c8-cb41-4e8a-91db-7e07809d33d3,,fan not workingg i am free at 4pm,Hostel,Ravi,10:00,18:00,16,16,resolved
