@@ -1,15 +1,19 @@
-# database.py - clean SQL database backend
+# database.py – SQLite backend for RMS AI
+
 import sqlite3
 
 DB_NAME = "rms.db"
 
+
 def get_connection():
     return sqlite3.connect(DB_NAME, check_same_thread=False)
+
 
 def create_tables():
     conn = get_connection()
     cur = conn.cursor()
 
+    # Students
     cur.execute("""
     CREATE TABLE IF NOT EXISTS students (
         student_id TEXT PRIMARY KEY,
@@ -18,6 +22,7 @@ def create_tables():
     );
     """)
 
+    # Technicians
     cur.execute("""
     CREATE TABLE IF NOT EXISTS technicians (
         name TEXT PRIMARY KEY,
@@ -30,6 +35,7 @@ def create_tables():
     );
     """)
 
+    # Requests
     cur.execute("""
     CREATE TABLE IF NOT EXISTS requests (
         request_id TEXT PRIMARY KEY,
@@ -49,6 +55,9 @@ def create_tables():
     conn.close()
 
 
+# -----------------------------
+# INSERT request
+# -----------------------------
 def insert_request(data):
     conn = get_connection()
     cur = conn.cursor()
@@ -72,6 +81,9 @@ def insert_request(data):
     conn.close()
 
 
+# -----------------------------
+# GET request history
+# -----------------------------
 def get_requests_by_student(student_id):
     conn = get_connection()
     cur = conn.cursor()
@@ -83,16 +95,21 @@ def get_requests_by_student(student_id):
     return rows
 
 
+# -----------------------------
+# UPDATE request status
+# -----------------------------
 def update_request_status(request_id, new_status):
     conn = get_connection()
     cur = conn.cursor()
 
     cur.execute("UPDATE requests SET status=? WHERE request_id=?", (new_status, request_id))
-
     conn.commit()
     conn.close()
 
 
+# -----------------------------
+# GET technicians by role
+# -----------------------------
 def get_available_technicians(role):
     conn = get_connection()
     cur = conn.cursor()
@@ -107,3 +124,37 @@ def get_available_technicians(role):
     rows = cur.fetchall()
     conn.close()
     return rows
+
+
+# -----------------------------
+# Technician load operations
+# -----------------------------
+def increment_load(name):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+    UPDATE technicians
+    SET current_load = current_load + 1,
+        status = 'busy'
+    WHERE name=?
+    """, (name,))
+
+    conn.commit()
+    conn.close()
+
+
+def decrement_load(name):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    # Load cannot be negative
+    cur.execute("""
+    UPDATE technicians
+    SET current_load = MAX(current_load - 1, 0),
+        status = CASE WHEN current_load - 1 <= 0 THEN 'free' ELSE 'busy' END
+    WHERE name=?
+    """, (name,))
+
+    conn.commit()
+    conn.close()
