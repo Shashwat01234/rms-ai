@@ -1,113 +1,76 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Student Login</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Login - RMS</title>
+
     <style>
         body {
-            font-family: Arial;
-            background: #eef2f3;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
         }
-        .box {
+
+        .login-container {
             width: 350px;
-            padding: 25px;
             background: white;
+            padding: 25px;
             border-radius: 10px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            box-shadow: 0 0 10px rgba(0,0,0,0.15);
         }
-        input, button {
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        input {
             width: 100%;
             padding: 12px;
-            margin-top: 12px;
-            border-radius: 6px;
+            margin: 8px 0;
             border: 1px solid #ccc;
+            border-radius: 5px;
         }
+
         button {
-            background: #007bff;
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
             color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
             cursor: pointer;
         }
+
         button:hover {
-            background: #005dc1;
-        }
-        .msg {
-            margin-top: 15px;
-            padding: 10px;
-            display: none;
-            border-radius: 6px;
+            background-color: #0056cc;
         }
     </style>
 </head>
+
 <body>
 
-<div class="box">
-    <h2 style="text-align:center;">Student Login</h2>
+    <div class="login-container">
+        <h2>Student Login</h2>
 
-    <input type="text" id="sid" placeholder="Enter Student ID">
-    <input type="password" id="password" placeholder="Enter Password">
+        <label>Student ID</label>
+        <input type="text" id="student_id" placeholder="Enter Student ID">
 
-    <button onclick="login()">Login</button>
+        <label>Password</label>
+        <input type="password" id="password" placeholder="Enter Password">
 
-    <div id="msg" class="msg"></div>
-</div>
+        <button id="loginBtn">Login</button>
+    </div>
 
-<script>
-function login() {
-    let sid = document.getElementById("sid").value;
-    let pwd = document.getElementById("password").value;
-    let msgBox = document.getElementById("msg");
-
-    fetch("http://127.0.0.1:5000/login", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-            student_id: sid,
-            password: pwd
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        msgBox.style.display = "block";
-
-        if (data.status === "success") {
-            msgBox.style.background = "#d4ffd4";
-            msgBox.innerHTML = "✔ " + data.message + "<br>Welcome " + data.name;
-
-            // Redirect after login success
-            setTimeout(() => {
-                window.location.href = "index.html";
-            }, 1200);
-
-        } else {
-            msgBox.style.background = "#ffd4d4";
-            msgBox.innerHTML = "❌ " + data.message;
-        }
-    });
-}
-function loginUser() {
-    let id = document.getElementById("student_id").value;
-    let pass = document.getElementById("password").value;
-
-    fetch("/login", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ student_id: id, password: pass })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            localStorage.setItem("student_id", id);
-            window.location.href = "index.html";
-        } else {
-            alert("Invalid ID or password");
-        }
-    });
-}
-
-</script>
+    <!-- Attach JavaScript -->
+    <script src="login.js"></script>
 
 </body>
 </html>
