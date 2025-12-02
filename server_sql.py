@@ -272,9 +272,20 @@ def history(student_id):
 # =======================================================
 @app.route("/admin/update_status", methods=["POST"])
 def admin_update():
-    data = request.json or {}
-    update_request_status(data["request_id"], data["status"])
-    return {"message": "updated"}
+    try:
+        data = request.get_json(force=True)
+        request_id = data.get("request_id")
+        new_status = data.get("status")
+
+        if not request_id or not new_status:
+            return jsonify({"error": "Missing fields"}), 400
+
+        update_request_status(request_id, new_status)
+        return jsonify({"message": "updated"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 
 # =======================================================
