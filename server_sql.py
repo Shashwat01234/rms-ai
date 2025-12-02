@@ -397,8 +397,11 @@ def technician_get_tasks():
 # ------------------------------
 @app.route("/")
 def home():
-    return send_from_directory("frontend", "login.html")
+    return send_from_directory("frontend", "homepage.html")
 
+@app.route("/<path:filename>")
+def serve_frontend(filename):
+    return send_from_directory("frontend", filename)
 
 # ------------------------------
 # Start server
