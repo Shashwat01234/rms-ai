@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Ignore virtual environments
 venv/
 ENV/
@@ -26,3 +27,33 @@ Thumbs.db
 # Ignore temporary files
 *.tmp
 *.bak
+=======
+# Ignore virtual environments
+venv/
+ENV/
+env/
+
+# Ignore sqlite database
+*.db
+
+# Ignore Python cache
+__pycache__/
+*.py[cod]
+
+# Ignore logs
+*.log
+
+# Ignore model training junk
+*.pkl
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Render build files
+*.build
+
+# Ignore temporary files
+*.tmp
+*.bak
+>>>>>>> ce0c45148455ebca9e6e971fde50c4b068d9bf46
