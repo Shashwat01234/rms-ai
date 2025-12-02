@@ -50,27 +50,25 @@ async function loadTasks(name) {
     }
 }
 
-async function markResolved(request_id, technician) {
-    try {
-        const res = await fetch("/technician/update_task", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                request_id,
-                status: "resolved",
-                technician
-            })
-        });
+async function markResolved(requestId) {
+    const payload = {
+        request_id: requestId,
+        status: "resolved"
+    };
 
-        const data = await res.json();
+    const res = await fetch("/admin/update_status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    });
 
+    const data = await res.json();
+
+    if (data.message === "updated") {
         alert("Task marked as resolved!");
-
-        // Reload tasks
-        loadTasks(localStorage.getItem("tech_name"));
-
-    } catch (err) {
-        console.error(err);
-        alert("Error updating task.");
+        location.reload();
+    } else {
+        alert("Error updating task: " + JSON.stringify(data));
     }
 }
+
