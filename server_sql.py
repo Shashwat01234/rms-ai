@@ -41,6 +41,41 @@ try:
         print("No ML model found — using fallback rules.")
 except Exception as e:
     print("Model Load Error:", e)
+    
+def auto_seed_if_empty():
+    conn = sqlite3.connect("rms.db")
+    cur = conn.cursor()
+
+    # Check if students table exists & has data
+    cur.execute("""
+    SELECT name FROM sqlite_master WHERE type='table' AND name='students'
+    """)
+    table_exists = cur.fetchone()
+
+    if not table_exists:
+        print("Creating tables because database is empty...")
+        from database import create_tables
+        create_tables()
+
+    # Check if students already inserted
+    cur.execute("SELECT COUNT(*) FROM students")
+    count = cur.fetchone()[0]
+
+    if count == 0:
+        print("Seeding DB... (first run only)")
+        # Import and run seeds
+        try:
+            from seed_data import seed_database
+            seed_database()
+            print("Seed successful!")
+        except Exception as e:
+            print("Seeding failed:", e)
+
+    conn.close()
+
+# Run auto-seed once during server start
+auto_seed_if_empty()
+# ---------------------------------------------------
 
 
 # ------------------------------
