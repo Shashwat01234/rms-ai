@@ -1,17 +1,21 @@
-# server_sql.py – SQL upgraded version of server.py (Option A)
+# server_sql.py – SQL upgraded RMS backend (FINAL VERSION)
+
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import re
 import uuid
 import pickle
 import os
-import pandas as pd
+import sqlite3
 
 from database import (
+    create_tables,
     insert_request,
     get_requests_by_student,
     update_request_status,
-    get_available_technicians
+    get_available_technicians,
+    increment_load,
+    decrement_load
 )
 
 # ------------------------------
@@ -19,6 +23,8 @@ from database import (
 # ------------------------------
 app = Flask(__name__, static_folder="frontend", static_url_path="")
 CORS(app)
+
+create_tables()  # IMPORTANT: create DB tables on server start
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -30,12 +36,15 @@ try:
     if os.path.exists(MODEL_FILE) and os.path.exists(VECTORIZER_FILE):
         model = pickle.load(open(MODEL_FILE, "rb"))
         vectorizer = pickle.load(open(VECTORIZER_FILE, "rb"))
-except:
-    pass
+        print("ML Model Loaded")
+    else:
+        print("No ML model found — using fallback rules.")
+except Exception as e:
+    print("Model Load Error:", e)
 
 
 # ------------------------------
-# Clean query function
+# Clean query
 # ------------------------------
 def clean_query_text(text):
     if not isinstance(text, str):
@@ -43,10 +52,9 @@ def clean_query_text(text):
     text = text.lower().strip()
 
     corrections = {
-        "wokring": "working", "workin": "working", "wrkng": "working",
-        "not wrking": "not working",
+        "wokring": "working", "wrkng": "working",
         "plz": "please", "pls": "please",
-        "ac": "air conditioner", "a.c": "air conditioner",
+        "ac": "air conditioner",
         "leek": "leak", "lakage": "leakage",
         "hstl": "hostel"
     }
@@ -57,13 +65,12 @@ def clean_query_text(text):
 
 
 # ------------------------------
-# Duplicate detection (SQL version)
+# Duplicate check (SQL)
 # ------------------------------
 def sql_duplicate_check(query):
-    # Load last 20 requests from SQL (simple method)
-    import sqlite3
     conn = sqlite3.connect("rms.db")
     cur = conn.cursor()
+
     cur.execute("SELECT request_id, query FROM requests ORDER BY rowid DESC LIMIT 20")
     rows = cur.fetchall()
     conn.close()
@@ -82,12 +89,12 @@ def sql_duplicate_check(query):
 
 
 # ------------------------------
-# Keyword boost mapping
+# Keyword role detection
 # ------------------------------
 maintenance_keywords = {
     "electrician": ["fan", "light", "switch", "socket", "ac", "air conditioner"],
     "plumber": ["leak", "water", "tap", "pipe", "flush"],
-    "carpenter": ["door", "bed", "window", "table"]
+    "carpenter": ["door", "bed", "window", "table"],
 }
 
 
@@ -100,7 +107,7 @@ def keyword_boost(query):
 
 
 # ------------------------------
-# Extract time logic
+# Extract time
 # ------------------------------
 def extract_time(query):
     q = query.lower()
@@ -140,7 +147,6 @@ def assign_technician(role, student_time):
         if status != "free":
             continue
 
-        # Convert to int safely
         try:
             s = int(start)
             e = int(end)
@@ -149,44 +155,43 @@ def assign_technician(role, student_time):
 
         if student_time is None:
             if load < lowest_load:
-                best = (name, start, end)
+                best = (name, s, e)
                 lowest_load = load
         else:
             if s <= student_time <= e and load < lowest_load:
-                best = (name, start, end)
+                best = (name, s, e)
                 lowest_load = load
 
     if best:
         return best[0], best[1], best[2], student_time, "matched"
 
-    # fallback lowest load
-    first = techs[0]
-    return first[0], first[2], first[3], first[2], "no_time_match"
+    # Fallback lowest-load free tech
+    name, role, start, end, load, status = techs[0]
+    return name, int(start), int(end), int(start), "no_time_match"
 
 
 # ------------------------------
-# Submit Request
+# Submit request
 # ------------------------------
 @app.route("/submit_request", methods=["POST"])
 def submit_request():
     data = request.json or {}
+
     student_id = data.get("student_id", "")
     query_raw = data.get("query", "")
     query_clean = clean_query_text(query_raw)
 
-    # Duplicate check
     is_dup, dup_id = sql_duplicate_check(query_clean)
-
-    # Extract time
     student_time = extract_time(query_clean)
 
-    # Category detection
+    # Category/Role Detection
     cat_boost, role_boost = keyword_boost(query_clean)
 
     if role_boost:
         category = cat_boost
         role = role_boost
     else:
+        # ML fallback
         if model and vectorizer:
             try:
                 q_vec = vectorizer.transform([query_clean])
@@ -196,14 +201,17 @@ def submit_request():
         else:
             category = "Hostel"
 
-        # Default role for hostel
-        role = "electrician" if "fan" in query_clean else None
+        # basic fallback
+        role = None
 
-    # assign technician
+    # Assign technician
     if role:
         tech, s, e, assigned_time, status = assign_technician(role, student_time)
     else:
         tech, s, e, assigned_time, status = (None, None, None, None, "no_technician")
+
+    if tech:
+        increment_load(tech)
 
     req_id = str(uuid.uuid4())
 
@@ -235,12 +243,12 @@ def submit_request():
 
 
 # ------------------------------
-# GET STATUS
+# Get status
 # ------------------------------
-@app.route("/get_status", methods=["GET"])
+@app.route("/get_status")
 def get_status():
     req_id = request.args.get("id")
-    import sqlite3
+
     conn = sqlite3.connect("rms.db")
     cur = conn.cursor()
     cur.execute("SELECT * FROM requests WHERE request_id=?", (req_id,))
@@ -257,7 +265,7 @@ def get_status():
 
 
 # ------------------------------
-# Student History
+# Student history
 # ------------------------------
 @app.route("/api/history/<student_id>")
 def history(student_id):
@@ -268,92 +276,35 @@ def history(student_id):
 
 
 # ------------------------------
-# Admin ops
+# Admin update
 # ------------------------------
 @app.route("/admin/update_status", methods=["POST"])
 def admin_update():
     data = request.json or {}
-    update_request_status(data["request_id"], data["status"])
+    req_id = data["request_id"]
+    status = data["status"]
+
+    update_request_status(req_id, status)
+
+    if status == "resolved":
+        conn = sqlite3.connect("rms.db")
+        cur = conn.cursor()
+        cur.execute("SELECT technician FROM requests WHERE request_id=?", (req_id,))
+        row = cur.fetchone()
+        conn.close()
+        if row and row[0]:
+            decrement_load(row[0])
+
     return {"message": "updated"}
 
 
 # ------------------------------
-# Frontend serving
-# ------------------------------
-@app.route("/")
-def home():
-    return send_from_directory("frontend", "login.html")
-# ------------------------------
-# Student Login (SQL version)
-# ------------------------------
-@app.route("/login", methods=["POST"])
-def login():
-    data = request.json or {}
-    student_id = data.get("student_id", "")
-    password = data.get("password", "")
-
-    import sqlite3
-    conn = sqlite3.connect("rms.db")
-    cur = conn.cursor()
-
-    cur.execute("SELECT name FROM students WHERE student_id=? AND password=?", (student_id, password))
-    row = cur.fetchone()
-
-    conn.close()
-
-    if row:
-        return jsonify({"status": "success", "message": "Login successful", "name": row[0]})
-    else:
-        return jsonify({"status": "error", "message": "Invalid ID or password"})
-# ------------------------------
-# Technician Login (SQL version)
-# ------------------------------
-@app.route("/technician/login", methods=["POST"])
-def technician_login():
-    data = request.json or {}
-    name = data.get("name", "")
-    password = data.get("password", "")
-
-    import sqlite3
-    conn = sqlite3.connect("rms.db")
-    cur = conn.cursor()
-
-    cur.execute("SELECT role FROM technicians WHERE name=? AND password=?", (name, password))
-    row = cur.fetchone()
-    conn.close()
-
-    if row:
-        return {"status": "success", "name": name, "role": row[0]}
-    else:
-        return {"status": "error", "message": "Invalid credentials"}
-# ------------------------------
-# Technician Tasks
-# ------------------------------
-@app.route("/technician/get_tasks", methods=["GET"])
-def technician_get_tasks():
-    tech_name = request.args.get("name", "")
-
-    import sqlite3
-    conn = sqlite3.connect("rms.db")
-    cur = conn.cursor()
-
-    cur.execute("SELECT * FROM requests WHERE technician=?", (tech_name,))
-    rows = cur.fetchall()
-    conn.close()
-
-    keys = ["request_id","student_id","query","category","technician",
-            "start_time","end_time","assigned_time","student_free_time","status"]
-
-    return jsonify([dict(zip(keys, r)) for r in rows])
-# ------------------------------
-# Admin — Get All Requests (SQL)
+# Admin — get all requests
 # ------------------------------
 @app.route("/admin/get_all_requests")
 def admin_get_all_requests():
-    import sqlite3
     conn = sqlite3.connect("rms.db")
     cur = conn.cursor()
-
     cur.execute("SELECT * FROM requests")
     rows = cur.fetchall()
     conn.close()
@@ -362,15 +313,15 @@ def admin_get_all_requests():
             "start_time","end_time","assigned_time","student_free_time","status"]
 
     return jsonify([dict(zip(keys, r)) for r in rows])
+
+
 # ------------------------------
-# Admin — Get All Technicians
+# Technicians list
 # ------------------------------
 @app.route("/admin/get_technicians")
 def admin_get_technicians():
-    import sqlite3
     conn = sqlite3.connect("rms.db")
     cur = conn.cursor()
-
     cur.execute("SELECT * FROM technicians")
     rows = cur.fetchall()
     conn.close()
@@ -381,7 +332,76 @@ def admin_get_technicians():
 
 
 # ------------------------------
-# Run server
+# Student Login
+# ------------------------------
+@app.route("/login", methods=["POST"])
+def login():
+    data = request.json or {}
+    student_id = data.get("student_id", "")
+    password = data.get("password", "")
+
+    conn = sqlite3.connect("rms.db")
+    cur = conn.cursor()
+    cur.execute("SELECT name FROM students WHERE student_id=? AND password=?", (student_id, password))
+    row = cur.fetchone()
+    conn.close()
+
+    if row:
+        return {"status": "success", "name": row[0]}
+    else:
+        return {"status": "error", "message": "Invalid credentials"}
+
+
+# ------------------------------
+# Technician Login
+# ------------------------------
+@app.route("/technician/login", methods=["POST"])
+def technician_login():
+    data = request.json or {}
+    name = data.get("name", "")
+    password = data.get("password", "")
+
+    conn = sqlite3.connect("rms.db")
+    cur = conn.cursor()
+    cur.execute("SELECT role FROM technicians WHERE name=? AND password=?", (name, password))
+    row = cur.fetchone()
+    conn.close()
+
+    if row:
+        return {"status": "success", "name": name, "role": row[0]}
+    else:
+        return {"status": "error", "message": "Invalid credentials"}
+
+
+# ------------------------------
+# Technician Tasks
+# ------------------------------
+@app.route("/technician/get_tasks")
+def technician_get_tasks():
+    name = request.args.get("name", "")
+
+    conn = sqlite3.connect("rms.db")
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM requests WHERE technician=?", (name,))
+    rows = cur.fetchall()
+    conn.close()
+
+    keys = ["request_id","student_id","query","category","technician",
+            "start_time","end_time","assigned_time","student_free_time","status"]
+
+    return jsonify([dict(zip(keys, r)) for r in rows])
+
+
+# ------------------------------
+# Serve frontend
+# ------------------------------
+@app.route("/")
+def home():
+    return send_from_directory("frontend", "login.html")
+
+
+# ------------------------------
+# Start server
 # ------------------------------
 if __name__ == "__main__":
     app.run(debug=True)
