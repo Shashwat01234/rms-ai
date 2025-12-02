@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Request History - RMS</title>
+    <title>Technician Tasks - RMS</title>
 
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: Arial;
             background-color: #eef2f7;
             margin: 0;
             padding: 0;
@@ -20,45 +20,43 @@
             background: white;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.15);
         }
 
-        h2 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .record {
+        .task {
             border: 1px solid #ddd;
             padding: 15px;
-            border-radius: 8px;
             margin-bottom: 12px;
+            border-radius: 8px;
             background: #fafafa;
         }
 
-        .status {
-            padding: 4px 10px;
+        button {
+            padding: 8px 15px;
+            margin-top: 10px;
+            border: none;
             border-radius: 6px;
-            font-weight: bold;
+            cursor: pointer;
         }
 
-        .resolved { background: #c8f7c5; color: #2c662d; }
-        .pending   { background: #ffe8a1; color: #7a5a00; }
-        .no_technician { background: #f7c6c6; color: #7a0000; }
+        .complete-btn {
+            background: #28a745;
+            color: white;
+        }
 
+        .complete-btn:hover {
+            background: #1f7a34;
+        }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h2>Your Complaint History</h2>
+        <h2>Your Assigned Tasks</h2>
 
-        <div id="historyList">
-            Loading your records...
-        </div>
+        <div id="taskList">Loading tasks...</div>
     </div>
 
-    <script src="history.js"></script>
+    <script src="technician_tasks.js"></script>
 
 </body>
 </html>

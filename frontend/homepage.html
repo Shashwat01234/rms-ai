@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RMS - Home</title>
+
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #4e73df, #1cc88a);
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 450px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+
+        p {
+            margin-bottom: 20px;
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 12px 0;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+            border: none;
+        }
+
+        .student-btn {
+            background-color: #f6c23e;
+        }
+
+        .technician-btn {
+            background-color: #36b9cc;
+        }
+
+        .admin-btn {
+            background-color: #e74a3b;
+        }
+
+        .btn:hover {
+            opacity: 0.8;
+            transform: translateY(-3px);
+        }
+
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Residential Management System</h1>
+        <p>Select your portal to continue</p>
+
+        <button class="btn student-btn" onclick="goStudent()">Student Login</button>
+        <button class="btn technician-btn" onclick="goTechnician()">Technician Login</button>
+        <button class="btn admin-btn" onclick="goAdmin()">Admin Dashboard</button>
+    </div>
+
+    <script src="homepage.js"></script>
+</body>
+</html>

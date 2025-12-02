@@ -1,0 +1,28 @@
+# Ignore virtual environments
+venv/
+ENV/
+env/
+
+# Ignore sqlite database
+*.db
+
+# Ignore Python cache
+__pycache__/
+*.py[cod]
+
+# Ignore logs
+*.log
+
+# Ignore model training junk
+*.pkl
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Render build files
+*.build
+
+# Ignore temporary files
+*.tmp
+*.bak

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technicians - RMS</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background-color: #eef2f7;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 900px;
+            margin: 30px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+        }
+
+        th {
+            background: #f1f1f1;
+        }
+    </style>
+
+</head>
+<body>
+
+    <div class="container">
+        <h2>Technician List</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Shift</th>
+                    <th>Load</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+
+            <tbody id="techTable"></tbody>
+        </table>
+
+    </div>
+
+    <script src="technicians.js"></script>
+</body>
+</html>
