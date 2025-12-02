@@ -5,105 +5,100 @@
     <style>
         body {
             font-family: Arial;
-            background: #eef2f3;
+            background: #f2f2f2;
+            padding: 20px;
         }
-        .navbar {
-            background: #333;
+        .header {
+            background: #222;
             color: white;
             padding: 15px;
             font-size: 22px;
+            border-radius: 8px;
         }
-        .container {
-            width: 800px;
-            margin: auto;
-            margin-top: 30px;
-        }
-        .card {
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
             background: white;
-            padding: 18px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            box-shadow: 0 0 12px rgba(0,0,0,0.1);
         }
-        select, button {
-            padding: 6px;
+        th, td {
+            padding: 12px;
+            border: 1px solid #ccc;
         }
-        button {
+        th {
             background: #007bff;
             color: white;
-            border: none;
-            border-radius: 6px;
         }
+        .btn {
+            padding: 8px 12px;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .resolve { background: green; }
+        .progress { background: orange; }
     </style>
 </head>
+
 <body>
 
-<div class="navbar">
-    Technician Dashboard — <span id="techName"></span>
+<div class="header">
+    Technician Dashboard
 </div>
 
-<div class="container" id="taskContainer">
-    <h2>Loading assigned tasks...</h2>
-</div>
+<h2>Assigned Tasks</h2>
+
+<table id="taskTable">
+    <tr>
+        <th>Request ID</th>
+        <th>Issue</th>
+        <th>Category</th>
+        <th>Status</th>
+        <th>Action</th>
+    </tr>
+</table>
 
 <script>
-document.getElementById("techName").innerText =
-    localStorage.getItem("tech_name");
+    const tech_name = localStorage.getItem("technician_name");
 
-let techName = localStorage.getItem("tech_name");
+    fetch(`/api/technician/tasks/${tech_name}`)
+        .then(res => res.json())
+        .then(tasks => {
+            let table = document.getElementById("taskTable");
 
-function loadTasks() {
-    fetch(`http://127.0.0.1:5000/technician/get_tasks?name=${techName}`)
-    .then(res => res.json())
-    .then(data => {
-        let box = document.getElementById("taskContainer");
-        box.innerHTML = "";
-
-        if (data.length === 0) {
-            box.innerHTML = "<h3>No tasks assigned.</h3>";
-            return;
-        }
-
-        data.forEach(t => {
-            box.innerHTML += `
-                <div class="card">
-                    <b>Request ID:</b> ${t.request_id}<br>
-                    <b>Query:</b> ${t.query}<br>
-                    <b>Status:</b> ${t.status}<br>
-                    <br>
-                    <select id="status_${t.request_id}">
-                        <option value="pending">Pending</option>
-                        <option value="in-progress">In Progress</option>
-                        <option value="resolved">Resolved</option>
-                    </select>
-
-                    <button onclick="updateTask('${t.request_id}')">Update</button>
-                </div>
-            `;
+            tasks.forEach(t => {
+                let tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>${t.request_id}</td>
+                    <td>${t.query}</td>
+                    <td>${t.category}</td>
+                    <td>${t.status}</td>
+                    <td>
+                        <button class="btn progress" onclick="updateStatus('${t.request_id}', 'in_progress')">In Progress</button>
+                        <button class="btn resolve" onclick="updateStatus('${t.request_id}', 'resolved')">Resolved</button>
+                    </td>
+                `;
+                table.appendChild(tr);
+            });
         });
-    });
-}
 
-function updateTask(id) {
-    let newStatus = document.getElementById(`status_${id}`).value;
-
-    fetch("http://127.0.0.1:5000/technician/update_task", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-            request_id: id,
-            status: newStatus,
-            technician: techName
+    function updateStatus(req_id, newStatus) {
+        fetch("/technician/update_task", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                request_id: req_id,
+                status: newStatus,
+                technician: localStorage.getItem("technician_name")
+            })
         })
-    })
-    .then(res => res.json())
-    .then(() => {
-        alert("Status updated!");
-        loadTasks();
-    });
-}
-
-loadTasks();
+        .then(res => res.json())
+        .then(msg => {
+            alert(msg.message || msg.error);
+            location.reload(); // refresh dashboard
+        });
+    }
 </script>
 
 </body>
