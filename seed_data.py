@@ -18,7 +18,7 @@ def seed_database():
         ("101", "Shashwat Dubey", "1234"),
         ("102", "Ravi Kumar", "1234"),
         ("103", "Aman Singh", "1234"),
-        ("12419805","Yash Sharma","1234")
+        
     ]
 
     cur.executemany("""
