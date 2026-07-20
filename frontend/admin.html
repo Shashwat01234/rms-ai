@@ -1,111 +1,380 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - RMS</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — RMS AI</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { padding:0; min-height:100vh; display:flex; flex-direction:column; }
+    .page-wrap { flex:1; max-width:1150px; width:100%; margin:0 auto; padding:28px 20px; }
+    h1 { font-size:24px; font-weight:700; margin-bottom:28px; }
 
-    <style>
-        body {
-            font-family: Arial;
-            background-color: #eef2f7;
-            margin: 0;
-            padding: 0;
-        }
+    /* Auth overlay */
+    .auth-overlay { position:fixed; inset:0; z-index:500; background:rgba(13,17,23,0.97); backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; }
+    .auth-box { width:100%; max-width:380px; padding:36px; }
+    .auth-title { font-size:22px; font-weight:700; text-align:center; margin-bottom:6px; }
+    .auth-sub   { color:var(--text-muted); font-size:14px; text-align:center; margin-bottom:24px; }
 
-        .container {
-            width: 95%;
-            max-width: 1100px;
-            margin: 25px auto;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-        }
+    /* Tabs */
+    .tabs { display:flex; gap:4px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:4px; margin-bottom:24px; width:fit-content; flex-wrap:wrap; }
+    .tab { padding:8px 18px; border-radius:6px; font-size:14px; font-weight:600; cursor:pointer; color:var(--text-muted); border:none; background:none; transition:all 0.2s; }
+    .tab.active { background:var(--card); color:var(--text); box-shadow:var(--shadow-sm); }
 
-        h2 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
+    /* Filter row */
+    .filter-row { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+    .filter-row .form-input, .filter-row .form-select { max-width:200px; padding:9px 12px; font-size:13px; }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 25px;
-        }
+    /* Technician cards */
+    .tech-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:16px; }
+    .tech-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:20px; }
+    .tech-name { font-size:16px; font-weight:700; margin-bottom:4px; }
+    .tech-role { font-size:13px; color:var(--text-muted); margin-bottom:12px; }
+    .load-bar-wrap { height:6px; background:var(--surface); border-radius:3px; margin-top:8px; overflow:hidden; }
+    .load-bar { height:100%; border-radius:3px; background:var(--blue); transition:width 0.5s ease; }
+    .load-info { display:flex; justify-content:space-between; font-size:12px; color:var(--text-muted); margin-top:4px; }
 
-        table, th, td {
-            border: 1px solid #ddd;
-        }
-
-        th {
-            background: #f1f1f1;
-            padding: 10px;
-        }
-
-        td {
-            padding: 10px;
-        }
-
-        select, button {
-            padding: 6px 8px;
-            border-radius: 6px;
-        }
-
-        button {
-            background: #007bff;
-            color: white;
-            border: none;
-        }
-
-        button:hover {
-            background: #0056cc;
-        }
-
-        .link-box {
-            text-align: right;
-            margin-bottom: 15px;
-        }
-
-        a {
-            color: #007bff;
-            text-decoration: none;
-            margin-left: 10px;
-        }
-
-        a:hover {
-            text-decoration: underline;
-        }
-
-    </style>
-
+    .note-input { background:var(--surface); border:1px solid var(--border); border-radius:4px; color:var(--text); padding:4px 8px; font-size:12px; width:140px; }
+  </style>
 </head>
 <body>
+  <div class="bg-animated"></div>
+  <div id="toast-container"></div>
 
-    <div class="container">
-        <h2>Admin Dashboard</h2>
-
-        <div class="link-box">
-            <a href="technicians.html">View Technicians</a>
-        </div>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Request ID</th>
-                    <th>Student ID</th>
-                    <th>Issue</th>
-                    <th>Category</th>
-                    <th>Technician</th>
-                    <th>Assigned Time</th>
-                    <th>Status</th>
-                    <th>Update</th>
-                </tr>
-            </thead>
-
-            <tbody id="requestTable"></tbody>
-        </table>
+  <!-- Admin auth overlay -->
+  <div class="auth-overlay" id="authOverlay">
+    <div class="glass-card auth-box">
+      <div class="auth-title">⚙️ Admin Login</div>
+      <p class="auth-sub">Enter the admin password to continue</p>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" id="adminPwd" placeholder="Admin password" autofocus>
+      </div>
+      <button class="btn btn-primary btn-block" id="adminLoginBtn">Login as Admin</button>
+      <div style="text-align:center; margin-top:14px;">
+        <a href="homepage.html" style="font-size:13px; color:var(--text-muted); text-decoration:none;">← Back to Home</a>
+      </div>
+      <div style="margin-top:16px; font-size:12px; color:var(--text-dim); text-align:center;">Default: admin123</div>
     </div>
+  </div>
 
-    <script src="admin.js"></script>
+  <!-- Main dashboard (hidden until auth) -->
+  <div id="mainDash" style="display:none; flex-direction:column; min-height:100vh;">
+    <nav class="navbar">
+      <a class="navbar-brand" href="homepage.html"><span class="brand-dot"></span>RMS AI</a>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <a href="technicians.html" style="font-size:13px; color:var(--blue); text-decoration:none;">Technicians Directory</a>
+        <button class="btn btn-outline" style="padding:7px 14px; font-size:13px;" onclick="adminLogout()">Logout</button>
+      </div>
+    </nav>
+
+    <div class="page-wrap fade-in">
+      <h1>Admin Dashboard</h1>
+
+      <!-- Stats -->
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card"><div class="stat-number" id="s_total">—</div><div class="stat-label">Hostel Requests</div></div>
+        <div class="stat-card"><div class="stat-number" id="s_pending" style="background:linear-gradient(135deg,var(--orange),#f6a623);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">—</div><div class="stat-label">Pending</div></div>
+        <div class="stat-card"><div class="stat-number" id="s_resolved" style="background:linear-gradient(135deg,var(--green-dark),var(--green));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">—</div><div class="stat-label">Resolved</div></div>
+        <div class="stat-card"><div class="stat-number" id="s_techs">—</div><div class="stat-label">Technicians</div></div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" onclick="showTab('requests',this)">📋 Hostel Requests</button>
+        <button class="tab" onclick="showTab('academic',this)">🎓 Academic AI Queries</button>
+        <button class="tab" onclick="showTab('certificates',this)">📜 Certificate Checks</button>
+        <button class="tab" onclick="showTab('technicians',this)">👷 Technicians</button>
+      </div>
+
+      <!-- Requests Tab -->
+      <div id="tab-requests">
+        <div class="filter-row">
+          <input class="form-input" id="searchInput" placeholder="🔍 Search by issue, student ID…" oninput="filterTable()">
+          <select class="form-input form-select" id="statusFilter" onchange="filterTable()">
+            <option value="">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="assigned">Assigned</option>
+            <option value="in_progress">In Progress</option>
+            <option value="resolved">Resolved</option>
+            <option value="no_technician">No Technician</option>
+          </select>
+        </div>
+        <div class="table-wrap glass-card" style="padding:0; overflow:hidden;">
+          <table class="data-table">
+            <thead><tr>
+              <th>Issue</th><th>Student</th><th>Category</th>
+              <th>Technician</th><th>Time</th><th>Status</th><th>Update</th>
+            </tr></thead>
+            <tbody id="reqTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Academic Queries Tab -->
+      <div id="tab-academic" style="display:none;">
+        <div class="table-wrap glass-card" style="padding:0; overflow:hidden;">
+          <table class="data-table">
+            <thead><tr>
+              <th>Question</th><th>Student</th><th>Category</th>
+              <th>AI Answer Preview</th><th>Dept Ref</th><th>Note / Action</th>
+            </tr></thead>
+            <tbody id="acadTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Certificate Verifications Tab -->
+      <div id="tab-certificates" style="display:none;">
+        <div class="table-wrap glass-card" style="padding:0; overflow:hidden;">
+          <table class="data-table">
+            <thead><tr>
+              <th>File / Name</th><th>Student</th><th>Institution & Title</th>
+              <th>Verdict</th><th>Conf</th><th>Summary</th><th>Admin Override</th>
+            </tr></thead>
+            <tbody id="certTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Technicians Tab -->
+      <div id="tab-technicians" style="display:none;">
+        <div class="tech-grid" id="techGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toast(msg,type="info"){const c=document.getElementById("toast-container");const t=document.createElement("div");t.className=`toast ${type}`;t.textContent=msg;c.appendChild(t);setTimeout(()=>{t.style.animation="slide-out 0.3s ease forwards";setTimeout(()=>t.remove(),300);},3500);}
+
+    let allRequests = [];
+
+    // ── Auth ──────────────────────────────────────
+    async function checkAuth() {
+      try {
+        const res  = await fetch("/admin/check_auth", {credentials:"include"});
+        const data = await res.json();
+        if (data.authenticated) showDash();
+      } catch {}
+    }
+
+    document.getElementById("adminLoginBtn").addEventListener("click", adminLogin);
+    document.getElementById("adminPwd").addEventListener("keydown", e => { if(e.key==="Enter") adminLogin(); });
+
+    async function adminLogin() {
+      const pwd = document.getElementById("adminPwd").value.trim();
+      const btn = document.getElementById("adminLoginBtn");
+      if (!pwd) { toast("Enter password","error"); return; }
+      btn.disabled=true; btn.textContent="Logging in…";
+      try {
+        const res  = await fetch("/admin/login",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"include",body:JSON.stringify({password:pwd})});
+        const data = await res.json();
+        if (data.status==="success") { showDash(); }
+        else { toast(data.message||"Wrong password","error"); btn.disabled=false; btn.textContent="Login as Admin"; }
+      } catch { toast("Server error","error"); btn.disabled=false; btn.textContent="Login as Admin"; }
+    }
+
+    async function adminLogout() {
+      await fetch("/admin/logout",{method:"POST",credentials:"include"});
+      location.reload();
+    }
+
+    function showDash() {
+      document.getElementById("authOverlay").style.display="none";
+      document.getElementById("mainDash").style.display="flex";
+      loadStats(); loadRequests(); loadTechnicians(); loadAcademic(); loadCertificates();
+    }
+
+    // ── Stats ──────────────────────────────────────
+    async function loadStats() {
+      try {
+        const res  = await fetch("/admin/stats",{credentials:"include"});
+        const d    = await res.json();
+        document.getElementById("s_total").textContent   = d.total       ?? 0;
+        document.getElementById("s_pending").textContent = d.pending     ?? 0;
+        document.getElementById("s_resolved").textContent= d.resolved    ?? 0;
+        document.getElementById("s_techs").textContent   = d.technicians ?? 0;
+      } catch {}
+    }
+
+    // ── Requests ───────────────────────────────────
+    async function loadRequests() {
+      const tbody = document.getElementById("reqTable");
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px;"><div class="spinner" style="margin:0 auto;"></div></td></tr>';
+      try {
+        const res = await fetch("/admin/get_all_requests",{credentials:"include"});
+        allRequests = await res.json();
+        renderTable(allRequests);
+      } catch { toast("Failed to load requests","error"); }
+    }
+
+    function renderTable(rows) {
+      const tbody = document.getElementById("reqTable");
+      if (!rows || !rows.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px; color:var(--text-muted);">No records found.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = rows.map(r => `
+        <tr>
+          <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${r.query}">${r.query}</td>
+          <td>${r.student_id||"—"}</td>
+          <td><span class="cat-badge" style="font-size:11px; padding:3px 8px; border-radius:10px; background:rgba(88,166,255,0.12); color:var(--blue); font-weight:600;">${r.category||"—"}</span></td>
+          <td>${r.technician||"—"}</td>
+          <td>${r.assigned_time ? "Hour "+r.assigned_time : "—"}</td>
+          <td><span class="badge badge-${r.status}">${r.status}</span></td>
+          <td>
+            <select id="sel-${r.request_id}" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;">
+              <option value="pending"       ${r.status==="pending"?"selected":""}>Pending</option>
+              <option value="assigned"      ${r.status==="assigned"?"selected":""}>Assigned</option>
+              <option value="in_progress"   ${r.status==="in_progress"?"selected":""}>In Progress</option>
+              <option value="resolved"      ${r.status==="resolved"?"selected":""}>Resolved</option>
+              <option value="no_technician" ${r.status==="no_technician"?"selected":""}>No Tech</option>
+            </select>
+            <button onclick="updateStatus('${r.request_id}')" style="margin-left:6px; background:var(--blue-dark); color:#fff; border:none; border-radius:6px; padding:5px 10px; font-size:13px; cursor:pointer;">Save</button>
+          </td>
+        </tr>`).join("");
+    }
+
+    function filterTable() {
+      const q   = document.getElementById("searchInput").value.toLowerCase();
+      const st  = document.getElementById("statusFilter").value;
+      const filtered = allRequests.filter(r => {
+        const matchQ  = !q  || (r.query||"").toLowerCase().includes(q) || (r.student_id||"").toLowerCase().includes(q) || (r.technician||"").toLowerCase().includes(q);
+        const matchSt = !st || r.status === st;
+        return matchQ && matchSt;
+      });
+      renderTable(filtered);
+    }
+
+    async function updateStatus(req_id) {
+      const sel = document.getElementById("sel-"+req_id);
+      if (!sel) return;
+      try {
+        const res  = await fetch("/admin/update_status",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"include",body:JSON.stringify({request_id:req_id,status:sel.value})});
+        const data = await res.json();
+        if (data.message) { toast("Status updated!","success"); loadStats(); loadRequests(); }
+        else toast(data.error||"Failed","error");
+      } catch { toast("Server error","error"); }
+    }
+
+    // ── Academic Queries ────────────────────────────
+    async function loadAcademic() {
+      const tbody = document.getElementById("acadTable");
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px;"><div class="spinner" style="margin:0 auto;"></div></td></tr>';
+      try {
+        const res = await fetch("/admin/academic/get_all", {credentials:"include"});
+        const rows = await res.json();
+        if (!rows || !rows.length) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--text-muted);">No academic queries logged yet.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = rows.map(q => `
+          <tr>
+            <td style="max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${q.question}">${q.question}</td>
+            <td>${q.student_id||"—"}</td>
+            <td><span class="cat-badge" style="font-size:11px; padding:3px 8px; border-radius:10px; background:rgba(88,166,255,0.12); color:var(--blue); font-weight:600;">${q.category}</span></td>
+            <td style="max-width:280px; font-size:12px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${q.ai_response}">${q.ai_response}</td>
+            <td style="font-size:11px; color:var(--text-dim); max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${q.department_ref}</td>
+            <td>
+              <input class="note-input" id="note-${q.query_id}" value="${q.admin_note||''}" placeholder="Add admin note...">
+              <button onclick="saveAcadNote('${q.query_id}')" style="margin-left:4px; background:var(--blue-dark); color:#fff; border:none; border-radius:4px; padding:4px 8px; font-size:12px; cursor:pointer;">Save</button>
+            </td>
+          </tr>
+        `).join("");
+      } catch {}
+    }
+
+    async function saveAcadNote(qid) {
+      const note = document.getElementById("note-"+qid).value;
+      try {
+        const res = await fetch("/admin/academic/add_note", {
+          method: "POST", headers: {"Content-Type":"application/json"}, credentials: "include",
+          body: JSON.stringify({ query_id: qid, note })
+        });
+        const data = await res.json();
+        if (data.message) toast("Note saved!", "success");
+      } catch { toast("Error saving note", "error"); }
+    }
+
+    // ── Certificate Verifications ─────────────────
+    async function loadCertificates() {
+      const tbody = document.getElementById("certTable");
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px;"><div class="spinner" style="margin:0 auto;"></div></td></tr>';
+      try {
+        const res = await fetch("/admin/certificates/get_all", {credentials:"include"});
+        const rows = await res.json();
+        if (!rows || !rows.length) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px; color:var(--text-muted);">No certificate verifications logged yet.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = rows.map(c => `
+          <tr>
+            <td><strong>${c.filename}</strong><br><small style="color:var(--text-dim);">${c.cert_name||'N/A'}</small></td>
+            <td>${c.student_id||"—"}</td>
+            <td><span style="font-weight:600;">${c.cert_degree||'N/A'}</span><br><small style="color:var(--text-muted);">${c.cert_institution||'N/A'}</small></td>
+            <td><span class="badge ${c.verdict==='GENUINE'?'badge-resolved':c.verdict==='SUSPICIOUS'?'badge-no_technician':'badge-pending'}">${c.verdict}</span></td>
+            <td><strong>${c.confidence}%</strong></td>
+            <td style="max-width:200px; font-size:12px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${c.ai_summary}">${c.ai_summary||'—'}</td>
+            <td>
+              <select id="ov-${c.verify_id}" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:12px;">
+                <option value="GENUINE" ${c.verdict==='GENUINE'?'selected':''}>GENUINE</option>
+                <option value="SUSPICIOUS" ${c.verdict==='SUSPICIOUS'?'selected':''}>SUSPICIOUS</option>
+                <option value="REQUIRES MANUAL REVIEW" ${c.verdict==='REQUIRES MANUAL REVIEW'?'selected':''}>REVIEW</option>
+              </select>
+              <button onclick="overrideCert('${c.verify_id}')" style="margin-left:4px; background:var(--blue-dark); color:#fff; border:none; border-radius:4px; padding:4px 8px; font-size:12px; cursor:pointer;">Save</button>
+            </td>
+          </tr>
+        `).join("");
+      } catch {}
+    }
+
+    async function overrideCert(vid) {
+      const v = document.getElementById("ov-"+vid).value;
+      try {
+        const res = await fetch("/admin/certificates/override", {
+          method: "POST", headers: {"Content-Type":"application/json"}, credentials: "include",
+          body: JSON.stringify({ verify_id: vid, verdict: v })
+        });
+        const data = await res.json();
+        if (data.message) { toast("Verdict updated!", "success"); loadCertificates(); }
+      } catch { toast("Error updating verdict", "error"); }
+    }
+
+    // ── Technicians ────────────────────────────────
+    async function loadTechnicians() {
+      try {
+        const res  = await fetch("/admin/get_technicians",{credentials:"include"});
+        const data = await res.json();
+        const grid = document.getElementById("techGrid");
+        if (!data || !data.length) { grid.innerHTML='<p style="color:var(--text-muted);">No technicians found.</p>'; return; }
+        grid.innerHTML = data.map(t => {
+          const pct  = Math.min((t.current_load||0)*25, 100);
+          const clr  = pct>=75?"var(--red)": pct>=50?"var(--orange)":"var(--green)";
+          return `
+          <div class="tech-card">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
+              <span class="tech-name">${t.name}</span>
+              <span class="badge badge-${t.status==="free"?"resolved":"pending"}">${t.status}</span>
+            </div>
+            <div class="tech-role">📋 ${t.role} &nbsp;·&nbsp; 🕐 ${t.start_time}–${t.end_time}</div>
+            <div class="load-info"><span>Load</span><span>${t.current_load||0} tasks</span></div>
+            <div class="load-bar-wrap"><div class="load-bar" style="width:${pct}%; background:${clr};"></div></div>
+          </div>`;
+        }).join("");
+      } catch {}
+    }
+
+    // ── Tabs ───────────────────────────────────────
+    function showTab(tab, el) {
+      document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+      el.classList.add("active");
+      document.getElementById("tab-requests").style.display     = tab==="requests"     ? "block" : "none";
+      document.getElementById("tab-academic").style.display     = tab==="academic"     ? "block" : "none";
+      document.getElementById("tab-certificates").style.display = tab==="certificates" ? "block" : "none";
+      document.getElementById("tab-technicians").style.display  = tab==="technicians"  ? "block" : "none";
+    }
+
+    checkAuth();
+  </script>
 </body>
 </html>

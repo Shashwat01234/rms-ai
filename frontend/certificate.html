@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Certificate Verifier — RMS AI</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { padding:0; min-height:100vh; display:flex; flex-direction:column; }
+    .page-wrap { flex:1; max-width:920px; width:100%; margin:0 auto; padding:28px 20px; }
+    h1 { font-size:24px; font-weight:700; margin-bottom:4px; }
+    .sub { color:var(--text-muted); font-size:14px; margin-bottom:28px; }
+
+    /* Dropzone */
+    .dropzone {
+      border:2px dashed var(--border-light); border-radius:var(--radius-lg);
+      padding:40px 20px; text-align:center; background:var(--surface);
+      cursor:pointer; transition:all 0.25s ease; position:relative; overflow:hidden;
+    }
+    .dropzone:hover, .dropzone.dragover {
+      border-color:var(--blue); background:rgba(88,166,255,0.05);
+    }
+    .dropzone input { display:none; }
+    .dz-icon { font-size:44px; margin-bottom:12px; }
+    .dz-title { font-size:16px; font-weight:700; margin-bottom:6px; color:var(--text); }
+    .dz-sub { font-size:13px; color:var(--text-muted); }
+
+    .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+    @media(max-width:768px){ .grid-2 { grid-template-columns:1fr; } }
+
+    /* Result Panel */
+    .cert-result {
+      background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg);
+      padding:24px; display:none; flex-direction:column; gap:16px; animation:fade-in 0.4s ease;
+    }
+    .cert-result.show { display:flex; }
+
+    .verdict-header {
+      display:flex; justify-content:space-between; align-items:center;
+      padding-bottom:14px; border-bottom:1px solid var(--border);
+    }
+    .verdict-badge {
+      font-size:14px; font-weight:800; padding:6px 14px; border-radius:20px;
+      display:inline-flex; align-items:center; gap:6px;
+    }
+    .verdict-GENUINE          { background:rgba(63,185,80,0.15);  color:var(--green);  border:1px solid rgba(63,185,80,0.3); }
+    .verdict-LIKELY_GENUINE   { background:rgba(88,166,255,0.15); color:var(--blue);   border:1px solid rgba(88,166,255,0.3); }
+    .verdict-SUSPICIOUS       { background:rgba(248,81,73,0.15);  color:var(--red);    border:1px solid rgba(248,81,73,0.3); }
+    .verdict-REQUIRES_REVIEW  { background:rgba(210,153,34,0.15); color:var(--orange); border:1px solid rgba(210,153,34,0.3); }
+
+    .conf-meter { display:flex; flex-direction:column; gap:4px; margin-top:8px; }
+    .conf-bar-wrap { height:8px; background:var(--surface); border-radius:4px; overflow:hidden; }
+    .conf-bar { height:100%; border-radius:4px; transition:width 0.8s ease; background:var(--green); }
+
+    .ext-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px; }
+    .ext-item { background:var(--surface); padding:10px 12px; border-radius:var(--radius-sm); border:1px solid var(--border); }
+    .ext-item .lbl { font-size:11px; color:var(--text-dim); text-transform:uppercase; font-weight:600; display:block; margin-bottom:2px; }
+    .ext-item .val { font-weight:600; color:var(--text); word-break:break-word; }
+
+    .checks-list { display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:12px; }
+    .check-item { display:flex; align-items:center; gap:6px; color:var(--text-muted); }
+    .check-item.pass { color:var(--green); font-weight:500; }
+    .check-item.fail { color:var(--text-dim); text-decoration:line-through; }
+
+    .flag-box {
+      background:rgba(248,81,73,0.1); border:1px solid rgba(248,81,73,0.3);
+      border-radius:var(--radius-sm); padding:10px 14px; font-size:13px; color:var(--red);
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-animated"></div>
+  <div id="toast-container"></div>
+
+  <nav class="navbar">
+    <a class="navbar-brand" href="homepage.html"><span class="brand-dot"></span>RMS AI</a>
+    <div style="display:flex; gap:14px; align-items:center;">
+      <a href="academic.html" style="font-size:13px; color:var(--blue); text-decoration:none;">🎓 Academic AI</a>
+      <a href="complaint.html" style="font-size:13px; color:var(--text-muted); text-decoration:none;">Hostel Complaints</a>
+      <span class="navbar-info">Logged in as <span id="nav_name">Student</span></span>
+    </div>
+  </nav>
+
+  <div class="page-wrap fade-in">
+    <h1>📜 AI Certificate Authenticity Verifier</h1>
+    <p class="sub">Upload any degree, mark sheet, bonafide, or certificate image/PDF for instant Gemini Vision analysis.</p>
+
+    <div class="grid-2">
+      <!-- UPLOAD CARD -->
+      <div class="glass-card" style="padding:24px;">
+        <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+          <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.webp,.pdf" onchange="handleFile(this.files[0])">
+          <div class="dz-icon">📄</div>
+          <div class="dz-title" id="dzTitle">Click or Drag & Drop Certificate</div>
+          <div class="dz-sub" id="dzSub">Supports JPG, PNG, WEBP, PDF (Max 10 MB)</div>
+        </div>
+
+        <div id="filePreview" style="display:none; margin-top:16px; font-size:13px; color:var(--blue); font-weight:600; text-align:center;"></div>
+
+        <button class="btn btn-primary btn-block" id="verifyBtn" style="margin-top:18px;" disabled onclick="submitVerification()">
+          ✨ Verify Authenticity with AI
+        </button>
+
+        <p style="font-size:11px; color:var(--text-dim); margin-top:14px; text-align:center;">
+          ℹ️ Disclaimer: AI verification is an automated pre-check helper tool. Final verification rests with university authorities.
+        </p>
+      </div>
+
+      <!-- RESULT CARD -->
+      <div class="glass-card" style="padding:24px; display:flex; flex-direction:column; justify-content:center;">
+        <div class="cert-result" id="certResult">
+          <div class="verdict-header">
+            <div>
+              <span style="font-size:11px; color:var(--text-dim); text-transform:uppercase; font-weight:600; display:block;">Analysis Result</span>
+              <div id="verdictBadge" class="verdict-badge">VERDICT</div>
+            </div>
+            <div style="text-align:right;">
+              <span style="font-size:22px; font-weight:800; color:var(--text);" id="confScore">0%</span>
+              <span style="font-size:11px; color:var(--text-dim); display:block;">Confidence Score</span>
+            </div>
+          </div>
+
+          <div class="conf-meter">
+            <div class="conf-bar-wrap">
+              <div class="conf-bar" id="confBar" style="width:0%;"></div>
+            </div>
+          </div>
+
+          <div>
+            <span style="font-size:12px; color:var(--text-dim); font-weight:600; text-transform:uppercase; display:block; margin-bottom:6px;">Extracted Information</span>
+            <div class="ext-grid">
+              <div class="ext-item"><span class="lbl">Name</span><span class="val" id="exName">—</span></div>
+              <div class="ext-item"><span class="lbl">Institution</span><span class="val" id="exInst">—</span></div>
+              <div class="ext-item"><span class="lbl">Degree/Title</span><span class="val" id="exDegree">—</span></div>
+              <div class="ext-item"><span class="lbl">Date / Number</span><span class="val" id="exDate">—</span></div>
+            </div>
+          </div>
+
+          <div>
+            <span style="font-size:12px; color:var(--text-dim); font-weight:600; text-transform:uppercase; display:block; margin-bottom:6px;">Authenticity Markers Check</span>
+            <div class="checks-list" id="checksList"></div>
+          </div>
+
+          <div id="flagsBox" class="flag-box" style="display:none;"></div>
+
+          <div style="font-size:13px; color:var(--text-muted); line-height:1.5; background:var(--surface); padding:12px; border-radius:var(--radius-sm); border:1px solid var(--border);" id="summaryBox"></div>
+        </div>
+
+        <div class="placeholder-panel" id="resultPlaceholder" style="text-align:center; padding:40px 20px; color:var(--text-muted);">
+          <div style="font-size:40px; margin-bottom:12px; opacity:0.6;">🔍</div>
+          <p><strong>Upload Certificate to Analyze</strong></p>
+          <p style="font-size:13px; margin-top:6px;">Gemini Vision will extract names, degrees, numbers, and verify 8 authenticity markers automatically.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toast(msg, type="info") {
+      const c = document.getElementById("toast-container");
+      const t = document.createElement("div"); t.className = `toast ${type}`; t.textContent = msg;
+      c.appendChild(t);
+      setTimeout(() => { t.style.animation = "slide-out 0.3s ease forwards"; setTimeout(() => t.remove(), 300); }, 3500);
+    }
+
+    const sid  = localStorage.getItem("student_id");
+    const name = localStorage.getItem("student_name") || "Student";
+    document.getElementById("nav_name").textContent = name;
+
+    if (!sid) {
+      toast("Please log in first.", "error");
+      setTimeout(() => { window.location.href = "login.html"; }, 1500);
+    }
+
+    let selectedFile = null;
+
+    const dz = document.getElementById("dropzone");
+    dz.addEventListener("dragover", e => { e.preventDefault(); dz.classList.add("dragover"); });
+    dz.addEventListener("dragleave", () => dz.classList.remove("dragover"));
+    dz.addEventListener("drop", e => {
+      e.preventDefault(); dz.classList.remove("dragover");
+      if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    });
+
+    function handleFile(file) {
+      if (!file) return;
+      selectedFile = file;
+      document.getElementById("dzTitle").textContent = "Selected: " + file.name;
+      document.getElementById("dzSub").textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB`;
+      document.getElementById("filePreview").style.display = "block";
+      document.getElementById("filePreview").textContent = "File ready for verification";
+      document.getElementById("verifyBtn").disabled = false;
+    }
+
+    async function submitVerification() {
+      if (!selectedFile) return;
+
+      const btn = document.getElementById("verifyBtn");
+      btn.disabled = true; btn.textContent = "🔍 Gemini Vision Analyzing…";
+
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("student_id", sid);
+
+      try {
+        const res = await fetch("/certificate/verify", {
+          method: "POST",
+          body: formData
+        });
+        const data = await res.json();
+
+        if (data.verdict) {
+          showResult(data);
+          toast("Verification complete!", "success");
+        } else {
+          toast(data.error || "Verification failed.", "error");
+        }
+      } catch (e) {
+        toast("Server error during analysis.", "error");
+      } finally {
+        btn.disabled = false; btn.textContent = "✨ Verify Authenticity with AI";
+      }
+    }
+
+    function showResult(d) {
+      document.getElementById("resultPlaceholder").style.display = "none";
+      const resCard = document.getElementById("certResult");
+      resCard.classList.add("show");
+
+      // Verdict badge
+      const vb = document.getElementById("verdictBadge");
+      const vClass = d.verdict ? d.verdict.replace(/ /g, "_") : "REQUIRES_REVIEW";
+      vb.className = `verdict-badge verdict-${vClass}`;
+      vb.textContent = d.verdict || "UNKNOWN";
+
+      // Confidence
+      const conf = d.confidence || 0;
+      document.getElementById("confScore").textContent = `${conf}%`;
+      const bar = document.getElementById("confBar");
+      bar.style.width = `${conf}%`;
+      bar.style.background = conf >= 75 ? "var(--green)" : conf >= 50 ? "var(--blue)" : "var(--red)";
+
+      // Extracted
+      const ext = d.extracted || {};
+      document.getElementById("exName").textContent = ext.name || "N/A";
+      document.getElementById("exInst").textContent = ext.institution || "N/A";
+      document.getElementById("exDegree").textContent = ext.degree_or_title || "N/A";
+      document.getElementById("exDate").textContent = (ext.date || "") + (ext.certificate_number ? ` (${ext.certificate_number})` : "");
+
+      // Checks
+      const cl = document.getElementById("checksList");
+      const checks = d.checks || {};
+      const checkLabels = {
+        official_seal_or_stamp: "Official Seal / Stamp",
+        authorized_signature: "Authorized Signature",
+        watermark_or_security_feature: "Watermark / Security",
+        official_letterhead: "Official Letterhead",
+        unique_identifier_number: "Unique Reg / Cert No",
+        consistent_typography: "Typography Consistency",
+        no_visible_tampering: "No Visible Tampering",
+        professional_print_quality: "Professional Print Quality"
+      };
+
+      cl.innerHTML = Object.entries(checkLabels).map(([k, label]) => {
+        const passed = checks[k] === true;
+        return `<div class="check-item ${passed ? 'pass' : 'fail'}">${passed ? '✅' : '❌'} ${label}</div>`;
+      }).join("");
+
+      // Flags
+      const fb = document.getElementById("flagsBox");
+      if (d.flags && d.flags.length) {
+        fb.style.display = "block";
+        fb.innerHTML = `⚠️ <strong>Flags:</strong> ${d.flags.join(", ")}`;
+      } else {
+        fb.style.display = "none";
+      }
+
+      // Summary
+      document.getElementById("summaryBox").textContent = d.summary || "No detailed summary available.";
+    }
+  </script>
+</body>
+</html>

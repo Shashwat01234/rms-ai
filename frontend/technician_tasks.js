@@ -1,76 +1,73 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const tech_name = localStorage.getItem("tech_name");
-
-    if (!tech_name) {
-        alert("Session expired. Please login again.");
+    const techName = localStorage.getItem("technician_name");
+    if (!techName) {
+        alert("Login expired");
         window.location.href = "technician_login.html";
+    }
+
+    loadTasks(techName);
+});
+
+
+async function loadTasks(name) {
+    const res = await fetch(`/technician/get_tasks?name=${name}`);
+    const data = await res.json();
+
+    const taskContainer = document.getElementById("taskList");
+    taskContainer.innerHTML = "";
+
+    if (data.length === 0) {
+        taskContainer.innerHTML = "<p>No tasks assigned.</p>";
         return;
     }
 
-    loadTasks(tech_name);
-});
+    data.forEach(task => {
+        const div = document.createElement("div");
+        div.className = "task";
 
-async function loadTasks(name) {
-    try {
-        const res = await fetch(`/technician/get_tasks?name=${name}`);
-        const tasks = await res.json();
+        div.innerHTML = `
+            <p><b>Issue:</b> ${task.query}</p>
+            <p><b>Category:</b> ${task.category}</p>
+            <p><b>Student ID:</b> ${task.student_id}</p>
+            <p><b>Status:</b> <span class="status-badge ${task.status}">${task.status}</span></p>
 
-        const list = document.getElementById("taskList");
-        list.innerHTML = "";
+            <button class="btn accept-btn" onclick="markAccepted('${task.request_id}')">
+                Accept Task
+            </button>
 
-        if (!tasks.length) {
-            list.innerHTML = "<p>No tasks assigned.</p>";
-            return;
-        }
+            <button class="btn resolve-btn" onclick="markResolved('${task.request_id}')">
+                Mark Resolved
+            </button>
+        `;
 
-        tasks.forEach(t => {
-            const div = document.createElement("div");
-            div.className = "task";
-
-            div.innerHTML = `
-                <p><b>Request ID:</b> ${t.request_id}</p>
-                <p><b>Issue:</b> ${t.query}</p>
-                <p><b>Category:</b> ${t.category}</p>
-                <p><b>Assigned Time:</b> ${t.assigned_time || "N/A"}</p>
-                <p><b>Status:</b> ${t.status}</p>
-
-                ${
-                    t.status !== "resolved"
-                        ? `<button class="complete-btn" onclick="markResolved('${t.request_id}', '${t.technician}')">Mark as Resolved</button>`
-                        : `<b style='color:green'>Completed</b>`
-                }
-            `;
-
-            list.appendChild(div);
-        });
-
-    } catch (err) {
-        console.error(err);
-        document.getElementById("taskList").innerHTML = "Error loading tasks.";
-    }
+        taskContainer.appendChild(div);
+    });
 }
 
-async function markResolved(request_id, technician) {
-    try {
-        const res = await fetch("/technician/update_task", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                request_id,
-                status: "resolved",
-                technician
-            })
-        });
+async function markAccepted(requestId) {
+    await updateStatus(requestId, "assigned");
+}
 
-        const data = await res.json();
+async function markResolved(requestId) {
+    await updateStatus(requestId, "resolved");
+}
 
-        alert("Task marked as resolved!");
+async function updateStatus(id, status) {
+    const res = await fetch("/admin/update_status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            request_id: id,
+            status: status
+        })
+    });
 
-        // Reload tasks
-        loadTasks(localStorage.getItem("tech_name"));
+    const data = await res.json();
 
-    } catch (err) {
-        console.error(err);
-        alert("Error updating task.");
+    if (data.message === "updated") {
+        alert("Status updated!");
+        location.reload();
+    } else {
+        alert("Error updating task: " + JSON.stringify(data));
     }
 }

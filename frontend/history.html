@@ -1,64 +1,115 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Request History - RMS</title>
-
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #eef2f7;
-            margin: 0;
-            padding: 0;
-        }
-
-        .container {
-            width: 90%;
-            max-width: 900px;
-            margin: 30px auto;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.15);
-        }
-
-        h2 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .record {
-            border: 1px solid #ddd;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 12px;
-            background: #fafafa;
-        }
-
-        .status {
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-weight: bold;
-        }
-
-        .resolved { background: #c8f7c5; color: #2c662d; }
-        .pending   { background: #ffe8a1; color: #7a5a00; }
-        .no_technician { background: #f7c6c6; color: #7a0000; }
-
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Complaint History — RMS AI</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { padding:0; min-height:100vh; display:flex; flex-direction:column; }
+    .page-wrap { flex:1; max-width:860px; width:100%; margin:0 auto; padding:28px 20px; }
+    h1 { font-size:24px; font-weight:700; margin-bottom:4px; }
+    .sub { color:var(--text-muted); font-size:14px; margin-bottom:28px; }
+    .cards-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:16px; }
+    .hist-card {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:var(--radius); padding:20px;
+      transition:border-color 0.2s, transform 0.2s;
+    }
+    .hist-card:hover { border-color:var(--border-light); transform:translateY(-2px); }
+    .hist-card-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
+    .hist-query { font-size:15px; font-weight:500; margin-bottom:10px; line-height:1.4; }
+    .hist-meta  { display:flex; flex-wrap:wrap; gap:8px 16px; font-size:13px; color:var(--text-muted); }
+    .hist-meta span::before { margin-right:4px; }
+    .cat-badge {
+      font-size:11px; padding:3px 8px; border-radius:10px;
+      background:rgba(88,166,255,0.12); color:var(--blue); font-weight:600;
+    }
+    .track-link { font-size:13px; color:var(--blue); text-decoration:none; }
+    .track-link:hover { text-decoration:underline; }
+  </style>
 </head>
 <body>
+  <div class="bg-animated"></div>
+  <div id="toast-container"></div>
 
-    <div class="container">
-        <h2>Your Complaint History</h2>
+  <nav class="navbar">
+    <a class="navbar-brand" href="homepage.html"><span class="brand-dot"></span>RMS AI</a>
+    <span class="navbar-info">Logged in as <span id="navName">Student</span></span>
+  </nav>
 
-        <div id="historyList">
-            Loading your records...
-        </div>
+  <div class="page-wrap fade-in">
+    <h1>Complaint History</h1>
+    <p class="sub">All requests submitted by your account, newest first.</p>
+
+    <div style="margin-bottom:20px; display:flex; gap:10px; flex-wrap:wrap;">
+      <a href="complaint.html" class="btn btn-primary" style="font-size:14px;">+ New Complaint</a>
+      <a href="status.html"    class="btn btn-outline" style="font-size:14px;">🔍 Track by ID</a>
     </div>
 
-    <script src="history.js"></script>
+    <div id="historyList"></div>
+  </div>
 
+  <script>
+    function toast(msg,type="info"){const c=document.getElementById("toast-container");const t=document.createElement("div");t.className=`toast ${type}`;t.textContent=msg;c.appendChild(t);setTimeout(()=>{t.style.animation="slide-out 0.3s ease forwards";setTimeout(()=>t.remove(),300);},3500);}
+
+    const student_id = localStorage.getItem("student_id");
+    const name       = localStorage.getItem("student_name") || "Student";
+    document.getElementById("navName").textContent = name;
+
+    if (!student_id) {
+      toast("Session expired.","error");
+      setTimeout(()=>{ window.location.href="login.html"; }, 1500);
+    } else {
+      loadHistory();
+    }
+
+    async function loadHistory() {
+      const container = document.getElementById("historyList");
+      container.innerHTML = '<div class="spinner"></div>';
+      try {
+        const res  = await fetch(`/api/history/${student_id}`);
+        const data = await res.json();
+
+        if (!data || data.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">📭</div>
+              <p>No complaints found yet.</p>
+              <a href="complaint.html" class="btn btn-primary" style="margin-top:16px; font-size:14px;">Submit your first request</a>
+            </div>`;
+          return;
+        }
+
+        container.innerHTML = '<div class="cards-grid" id="cardsGrid"></div>';
+        const grid = document.getElementById("cardsGrid");
+
+        data.forEach(rec => {
+          const card = document.createElement("div");
+          card.className = "hist-card fade-in";
+          const time = rec.assigned_time ? `Hour ${rec.assigned_time}:00` : "—";
+          card.innerHTML = `
+            <div class="hist-card-top">
+              <span class="cat-badge">${rec.category||"Unknown"}</span>
+              <span class="badge badge-${rec.status}">${rec.status}</span>
+            </div>
+            <div class="hist-query">${rec.query}</div>
+            <div class="hist-meta">
+              <span>👷 ${rec.technician || "Unassigned"}</span>
+              <span>🕐 ${time}</span>
+            </div>
+            <hr class="divider" style="margin:14px 0 10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:11px; color:var(--text-dim); font-family:monospace;">${rec.request_id.slice(0,18)}…</span>
+              <a class="track-link" href="status.html?id=${rec.request_id}">Track →</a>
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+      } catch(e) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><p>Error loading history.</p></div>';
+      }
+    }
+  </script>
 </body>
 </html>

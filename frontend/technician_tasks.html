@@ -1,62 +1,140 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Technician Tasks - RMS</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Tasks — RMS AI</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { padding:0; min-height:100vh; display:flex; flex-direction:column; }
+    .page-wrap { flex:1; max-width:860px; width:100%; margin:0 auto; padding:28px 20px; }
+    h1 { font-size:24px; font-weight:700; margin-bottom:4px; }
+    .sub { color:var(--text-muted); font-size:14px; margin-bottom:28px; }
 
-    <style>
-        body {
-            font-family: Arial;
-            background-color: #eef2f7;
-            margin: 0;
-            padding: 0;
-        }
-
-        .container {
-            width: 90%;
-            max-width: 900px;
-            margin: 30px auto;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-        }
-
-        .task {
-            border: 1px solid #ddd;
-            padding: 15px;
-            margin-bottom: 12px;
-            border-radius: 8px;
-            background: #fafafa;
-        }
-
-        button {
-            padding: 8px 15px;
-            margin-top: 10px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        .complete-btn {
-            background: #28a745;
-            color: white;
-        }
-
-        .complete-btn:hover {
-            background: #1f7a34;
-        }
-    </style>
+    .task-card {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:var(--radius); padding:22px; margin-bottom:16px;
+      transition:border-color 0.2s, transform 0.2s;
+      animation: fade-in 0.3s ease both;
+    }
+    .task-card:hover { border-color:var(--border-light); transform:translateY(-2px); }
+    .task-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; }
+    .task-query  { font-size:15px; font-weight:600; flex:1; margin-right:12px; line-height:1.4; }
+    .task-meta   { display:flex; flex-wrap:wrap; gap:8px 20px; font-size:13px; color:var(--text-muted); margin-bottom:16px; }
+    .task-actions { display:flex; gap:10px; flex-wrap:wrap; }
+    .task-actions button {
+      padding:8px 16px; border-radius:var(--radius-sm); border:none; cursor:pointer;
+      font-size:13px; font-weight:600; font-family:inherit; transition:all 0.2s;
+    }
+    .btn-accept   { background:rgba(88,166,255,0.15); color:var(--blue); }
+    .btn-progress { background:rgba(188,140,255,0.15); color:var(--purple); }
+    .btn-resolve  { background:rgba(63,185,80,0.15);  color:var(--green);  }
+    .btn-accept:hover   { background:var(--blue);   color:#fff; }
+    .btn-progress:hover { background:var(--purple); color:#fff; }
+    .btn-resolve:hover  { background:var(--green);  color:#fff; }
+  </style>
 </head>
 <body>
+  <div class="bg-animated"></div>
+  <div id="toast-container"></div>
 
-    <div class="container">
-        <h2>Your Assigned Tasks</h2>
-
-        <div id="taskList">Loading tasks...</div>
+  <nav class="navbar">
+    <a class="navbar-brand" href="homepage.html"><span class="brand-dot"></span>RMS AI</a>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <span class="navbar-info">👷 <span id="navName">Technician</span> · <span id="navRole" style="color:var(--green);"></span></span>
+      <button class="btn btn-outline" style="padding:7px 14px; font-size:13px;" onclick="techLogout()">Logout</button>
     </div>
+  </nav>
 
-    <script src="technician_tasks.js"></script>
+  <div class="page-wrap fade-in">
+    <h1>My Assigned Tasks</h1>
+    <p class="sub" id="subText">Loading your tasks…</p>
+    <div id="taskList"></div>
+  </div>
 
+  <script>
+    function toast(msg,type="info"){const c=document.getElementById("toast-container");const t=document.createElement("div");t.className=`toast ${type}`;t.textContent=msg;c.appendChild(t);setTimeout(()=>{t.style.animation="slide-out 0.3s ease forwards";setTimeout(()=>t.remove(),300);},3500);}
+
+    const techName = localStorage.getItem("technician_name");
+    const techRole = localStorage.getItem("technician_role");
+
+    if (!techName) {
+      toast("Session expired.","error");
+      setTimeout(()=>{ window.location.href="technician_login.html"; }, 1500);
+    } else {
+      document.getElementById("navName").textContent = techName;
+      document.getElementById("navRole").textContent = techRole || "";
+      loadTasks();
+    }
+
+    function techLogout() {
+      localStorage.removeItem("technician_name");
+      localStorage.removeItem("technician_role");
+      window.location.href = "homepage.html";
+    }
+
+    async function loadTasks() {
+      const list = document.getElementById("taskList");
+      list.innerHTML = '<div class="spinner"></div>';
+      try {
+        const res  = await fetch(`/technician/get_tasks?name=${encodeURIComponent(techName)}`);
+        const data = await res.json();
+
+        if (!data || data.length === 0) {
+          document.getElementById("subText").textContent = "No tasks assigned to you yet.";
+          list.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">📭</div>
+              <p>No tasks assigned yet. Check back later.</p>
+            </div>`;
+          return;
+        }
+
+        const active   = data.filter(t => t.status !== "resolved");
+        const resolved = data.filter(t => t.status === "resolved");
+        document.getElementById("subText").textContent = `${active.length} active · ${resolved.length} resolved`;
+
+        list.innerHTML = "";
+        data.forEach((task, i) => {
+          const card = document.createElement("div");
+          card.className = "task-card";
+          card.style.animationDelay = `${i * 0.06}s`;
+          const isResolved = task.status === "resolved";
+          card.innerHTML = `
+            <div class="task-header">
+              <div class="task-query">${task.query}</div>
+              <span class="badge badge-${task.status}">${task.status}</span>
+            </div>
+            <div class="task-meta">
+              <span>🎓 Student: ${task.student_id||"—"}</span>
+              <span>📂 ${task.category||"—"}</span>
+              ${task.assigned_time ? `<span>🕐 Slot: Hour ${task.assigned_time}:00</span>` : ""}
+            </div>
+            ${!isResolved ? `
+            <div class="task-actions">
+              ${task.status==="pending" ? `<button class="btn-accept"   onclick="updateTask('${task.request_id}','assigned')">✔ Accept</button>` : ""}
+              ${task.status==="assigned" ? `<button class="btn-progress" onclick="updateTask('${task.request_id}','in_progress')">⚙️ Start Work</button>` : ""}
+              <button class="btn-resolve" onclick="updateTask('${task.request_id}','resolved')">✅ Mark Resolved</button>
+            </div>` : '<div style="font-size:13px; color:var(--green);">✅ This task is resolved.</div>'}
+          `;
+          list.appendChild(card);
+        });
+      } catch(e) {
+        list.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><p>Error loading tasks.</p></div>';
+      }
+    }
+
+    async function updateTask(req_id, status) {
+      try {
+        const res  = await fetch("/technician/update_task", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({ request_id:req_id, status, technician:techName })
+        });
+        const data = await res.json();
+        if (data.message) { toast("Task updated!","success"); loadTasks(); }
+        else toast(data.error||"Update failed","error");
+      } catch { toast("Server error","error"); }
+    }
+  </script>
 </body>
 </html>

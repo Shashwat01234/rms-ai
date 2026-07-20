@@ -1,62 +1,78 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Technicians - RMS</title>
-
-    <style>
-        body {
-            font-family: Arial;
-            background-color: #eef2f7;
-        }
-
-        .container {
-            width: 90%;
-            max-width: 900px;
-            margin: 30px auto;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
-        }
-
-        th {
-            background: #f1f1f1;
-        }
-    </style>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Technicians — RMS AI</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { padding:0; min-height:100vh; display:flex; flex-direction:column; }
+    .page-wrap { flex:1; max-width:860px; width:100%; margin:0 auto; padding:28px 20px; }
+    h1 { font-size:24px; font-weight:700; margin-bottom:4px; }
+    .sub { color:var(--text-muted); font-size:14px; margin-bottom:28px; }
+    .tech-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:16px; }
+    .tech-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:22px; transition:border-color 0.2s, transform 0.2s; animation:fade-in 0.4s ease both; }
+    .tech-card:hover { border-color:var(--border-light); transform:translateY(-3px); }
+    .tech-avatar { width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg,var(--blue-dark),var(--blue)); display:flex; align-items:center; justify-content:center; font-size:20px; margin-bottom:14px; }
+    .tech-name   { font-size:17px; font-weight:700; margin-bottom:3px; }
+    .tech-role   { font-size:13px; color:var(--text-muted); margin-bottom:12px; text-transform:capitalize; }
+    .tech-shift  { font-size:12px; color:var(--text-dim); margin-bottom:10px; }
+    .load-bar-wrap { height:5px; background:var(--surface); border-radius:3px; overflow:hidden; margin-bottom:6px; }
+    .load-bar    { height:100%; border-radius:3px; transition:width 0.6s ease; }
+    .load-info   { display:flex; justify-content:space-between; font-size:12px; color:var(--text-muted); }
+  </style>
 </head>
 <body>
+  <div class="bg-animated"></div>
 
-    <div class="container">
-        <h2>Technician List</h2>
+  <nav class="navbar">
+    <a class="navbar-brand" href="homepage.html"><span class="brand-dot"></span>RMS AI</a>
+    <a href="admin.html" style="font-size:13px; color:var(--blue); text-decoration:none;">← Admin Dashboard</a>
+  </nav>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Role</th>
-                    <th>Shift</th>
-                    <th>Load</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
+  <div class="page-wrap fade-in">
+    <h1>Technician Directory</h1>
+    <p class="sub">Current availability and workload of all technicians.</p>
+    <div class="tech-grid" id="techGrid"><div class="spinner"></div></div>
+  </div>
 
-            <tbody id="techTable"></tbody>
-        </table>
+  <script>
+    const ROLE_EMOJI = { electrician:"⚡", plumber:"🚿", carpenter:"🪚", painter:"🎨" };
 
-    </div>
-
-    <script src="technicians.js"></script>
+    async function loadTechs() {
+      const grid = document.getElementById("techGrid");
+      try {
+        const res  = await fetch("/admin/get_technicians", { credentials:"include" });
+        const data = await res.json();
+        if (!data || !data.length) { grid.innerHTML='<p style="color:var(--text-muted);">No technicians found.</p>'; return; }
+        grid.innerHTML = "";
+        data.forEach((t, i) => {
+          const pct  = Math.min((t.current_load||0)*25, 100);
+          const clr  = pct>=75?"var(--red)": pct>=50?"var(--orange)":"var(--green)";
+          const emoji= ROLE_EMOJI[t.role] || "🔧";
+          const card = document.createElement("div");
+          card.className="tech-card";
+          card.style.animationDelay = `${i*0.07}s`;
+          card.innerHTML = `
+            <div class="tech-avatar">${emoji}</div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div class="tech-name">${t.name}</div>
+                <div class="tech-role">${t.role}</div>
+              </div>
+              <span class="badge badge-${t.status==="free"?"resolved":"pending"}">${t.status}</span>
+            </div>
+            <div class="tech-shift">🕐 ${t.start_time} – ${t.end_time}</div>
+            <div class="load-bar-wrap"><div class="load-bar" style="width:${pct}%; background:${clr};"></div></div>
+            <div class="load-info"><span>Workload</span><span>${t.current_load||0} active tasks</span></div>
+          `;
+          grid.appendChild(card);
+        });
+      } catch(e) {
+        grid.innerHTML = '<p style="color:var(--red);">Error loading technicians. Please login as admin first.</p>';
+      }
+    }
+    loadTechs();
+  </script>
 </body>
 </html>

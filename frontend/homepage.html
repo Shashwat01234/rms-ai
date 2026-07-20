@@ -1,87 +1,111 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RMS - Home</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RMS AI — Residential & Academic Management System</title>
+  <meta name="description" content="AI-powered Residential & Academic Management System with Gemini assistance and Certificate Authenticity Verification.">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding:30px 20px; }
+    .hero { text-align:center; margin-bottom:40px; }
+    .hero-badge {
+      display:inline-flex; align-items:center; gap:8px;
+      background:rgba(88,166,255,0.12); border:1px solid rgba(88,166,255,0.25);
+      color:var(--blue); padding:6px 14px; border-radius:20px;
+      font-size:13px; font-weight:600; margin-bottom:20px;
+    }
+    .hero-badge .pulse { width:8px; height:8px; border-radius:50%; background:var(--green); animation:pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(63,185,80,0.6);} 50%{box-shadow:0 0 0 6px rgba(63,185,80,0);} }
+    h1 { font-size:clamp(32px,5vw,52px); font-weight:800; line-height:1.15; margin-bottom:14px; }
+    h1 span { background:linear-gradient(135deg,var(--blue),var(--purple)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .hero p { font-size:16px; color:var(--text-muted); max-width:520px; margin:0 auto; }
 
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #4e73df, #1cc88a);
-            height: 100vh;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
-        }
+    .portals { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:20px; width:100%; max-width:1050px; }
+    .portal-card {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:var(--radius-lg); padding:28px 24px;
+      cursor:pointer; text-decoration:none; color:var(--text);
+      transition:all 0.25s ease; position:relative; overflow:hidden;
+      display:flex; flex-direction:column;
+    }
+    .portal-card::before {
+      content:''; position:absolute; inset:0; opacity:0;
+      transition:opacity 0.25s ease;
+    }
+    .portal-card:hover { transform:translateY(-6px); border-color:var(--border-light); }
+    .portal-card:hover::before { opacity:1; }
+    .portal-card.hostel::before     { background:radial-gradient(circle at 50% 0%, rgba(88,166,255,0.08) 0%,transparent 70%); }
+    .portal-card.academic::before   { background:radial-gradient(circle at 50% 0%, rgba(188,140,255,0.08) 0%,transparent 70%); }
+    .portal-card.certificate::before{ background:radial-gradient(circle at 50% 0%, rgba(63,185,80,0.08) 0%,transparent 70%); }
+    .portal-card.admin::before      { background:radial-gradient(circle at 50% 0%, rgba(248,81,73,0.08) 0%,transparent 70%); }
 
-        .container {
-            width: 90%;
-            max-width: 450px;
-            text-align: center;
-            background: rgba(255, 255, 255, 0.15);
-            padding: 30px;
-            border-radius: 15px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-        }
+    .portal-icon {
+      width:48px; height:48px; border-radius:14px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:22px; margin-bottom:16px;
+    }
+    .portal-card.hostel      .portal-icon { background:rgba(88,166,255,0.15); }
+    .portal-card.academic    .portal-icon { background:rgba(188,140,255,0.15); }
+    .portal-card.certificate .portal-icon { background:rgba(63,185,80,0.15); }
+    .portal-card.admin        .portal-icon { background:rgba(248,81,73,0.15); }
 
-        h1 {
-            font-size: 32px;
-            margin-bottom: 20px;
-        }
-
-        p {
-            margin-bottom: 20px;
-            font-size: 16px;
-            opacity: 0.9;
-        }
-
-        .btn {
-            display: block;
-            width: 100%;
-            padding: 15px;
-            margin: 12px 0;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: 0.3s;
-            border: none;
-        }
-
-        .student-btn {
-            background-color: #f6c23e;
-        }
-
-        .technician-btn {
-            background-color: #36b9cc;
-        }
-
-        .admin-btn {
-            background-color: #e74a3b;
-        }
-
-        .btn:hover {
-            opacity: 0.8;
-            transform: translateY(-3px);
-        }
-
-    </style>
+    .portal-title { font-size:18px; font-weight:700; margin-bottom:6px; }
+    .portal-desc  { font-size:13.5px; color:var(--text-muted); line-height:1.5; margin-bottom:18px; flex:1; }
+    .portal-cta {
+      display:inline-flex; align-items:center; gap:6px;
+      font-size:13.5px; font-weight:600;
+    }
+    .portal-card.hostel      .portal-cta { color:var(--blue); }
+    .portal-card.academic    .portal-cta { color:var(--purple); }
+    .portal-card.certificate .portal-cta { color:var(--green); }
+    .portal-card.admin        .portal-cta { color:var(--red); }
+    .arrow { transition:transform 0.2s; }
+    .portal-card:hover .arrow { transform:translateX(4px); }
+    footer { margin-top:40px; font-size:13px; color:var(--text-dim); text-align:center; }
+  </style>
 </head>
-
 <body>
-    <div class="container">
-        <h1>Residential Management System</h1>
-        <p>Select your portal to continue</p>
+  <div class="bg-animated"></div>
 
-        <button class="btn student-btn" onclick="goStudent()">Student Login</button>
-        <button class="btn technician-btn" onclick="goTechnician()">Technician Login</button>
-        <button class="btn admin-btn" onclick="goAdmin()">Admin Dashboard</button>
-    </div>
+  <div class="hero fade-in">
+    <div class="hero-badge"><span class="pulse"></span>Gemini AI Powered</div>
+    <h1>Campus & Academic<br><span>AI Management System</span></h1>
+    <p>Smart hostel complaints, AI academic advice for LPU departments, and instant certificate authenticity verification.</p>
+  </div>
 
-    <script src="homepage.js"></script>
+  <div class="portals fade-in fade-in-delay-1">
+    <a href="login.html" class="portal-card hostel">
+      <div class="portal-icon">🛠️</div>
+      <div class="portal-title">Hostel Complaints</div>
+      <p class="portal-desc">Submit maintenance issues (electricity, plumbing, carpentry). Auto-assigned to technicians.</p>
+      <div class="portal-cta">Student Login <span class="arrow">→</span></div>
+    </a>
+
+    <a href="academic.html" class="portal-card academic">
+      <div class="portal-icon">🎓</div>
+      <div class="portal-title">Academic AI Advisor</div>
+      <p class="portal-desc">Get instant AI help for LPU fees, exams, results, UMS portal, bonafide certificates & placement drives.</p>
+      <div class="portal-cta">Ask Academic AI <span class="arrow">→</span></div>
+    </a>
+
+    <a href="certificate.html" class="portal-card certificate">
+      <div class="portal-icon">📜</div>
+      <div class="portal-title">Certificate Verifier</div>
+      <p class="portal-desc">Upload degree, bonafide or NOC certificate image/PDF for Gemini Vision authenticity verification.</p>
+      <div class="portal-cta">Verify Certificate <span class="arrow">→</span></div>
+    </a>
+
+    <a href="admin.html" class="portal-card admin">
+      <div class="portal-icon">⚙️</div>
+      <div class="portal-title">Admin Dashboard</div>
+      <p class="portal-desc">Monitor hostel requests, review academic queries, check technician load & review certificate verifications.</p>
+      <div class="portal-cta">Admin Panel <span class="arrow">→</span></div>
+    </a>
+  </div>
+
+  <footer class="fade-in fade-in-delay-2">
+    RMS AI v3.0 &nbsp;·&nbsp; Residential & Academic AI Platform &nbsp;·&nbsp; LPU Edition
+  </footer>
 </body>
 </html>

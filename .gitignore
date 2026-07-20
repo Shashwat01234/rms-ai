@@ -1,59 +1,34 @@
-<<<<<<< HEAD
-# Ignore virtual environments
-venv/
-ENV/
-env/
-
-# Ignore sqlite database
-*.db
-
-# Ignore Python cache
+# Python
 __pycache__/
 *.py[cod]
+*.pyo
+*.pyd
+.Python
 
-# Ignore logs
-*.log
-
-# Ignore model training junk
-*.pkl
-
-# Ignore OS files
-.DS_Store
-Thumbs.db
-
-# Render build files
-*.build
-
-# Ignore temporary files
-*.tmp
-*.bak
-=======
-# Ignore virtual environments
+# Virtual envs
+.venv/
 venv/
-ENV/
 env/
 
-# Ignore sqlite database
-*.db
+# Database (local dev only — production uses PostgreSQL)
+rms.db
 
-# Ignore Python cache
-__pycache__/
-*.py[cod]
+# Secrets / env
+.env
+*.env
 
-# Ignore logs
-*.log
+# Compiled ML models (regenerate via train.py)
+# model.pkl   ← keep these, they're needed on first deploy
+# vectorizer.pkl
 
-# Ignore model training junk
-*.pkl
+# Old/archive files
+archive/
 
-# Ignore OS files
+# IDE
+.vscode/
+*.code-workspace
+.idea/
+
+# OS
 .DS_Store
 Thumbs.db
-
-# Render build files
-*.build
-
-# Ignore temporary files
-*.tmp
-*.bak
->>>>>>> ce0c45148455ebca9e6e971fde50c4b068d9bf46

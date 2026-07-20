@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Academic AI Advisor — RMS AI</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { padding:0; min-height:100vh; display:flex; flex-direction:column; }
+    .page-wrap { flex:1; max-width:900px; width:100%; margin:0 auto; padding:28px 20px; }
+    h1 { font-size:24px; font-weight:700; margin-bottom:4px; }
+    .sub { color:var(--text-muted); font-size:14px; margin-bottom:28px; }
+
+    .tabs { display:flex; gap:8px; margin-bottom:24px; }
+    .tab-btn {
+      padding:10px 18px; border-radius:var(--radius-sm); border:1px solid var(--border);
+      background:var(--surface); color:var(--text-muted); font-size:14px; font-weight:600;
+      cursor:pointer; transition:all 0.2s;
+    }
+    .tab-btn.active { background:var(--blue); color:#fff; border-color:var(--blue); }
+
+    .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+    @media(max-width:768px){ .grid-2 { grid-template-columns:1fr; } }
+
+    .quick-chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+    .chip {
+      background:var(--surface); border:1px solid var(--border); border-radius:20px;
+      padding:6px 12px; font-size:12px; color:var(--text-muted); cursor:pointer;
+      transition:all 0.2s;
+    }
+    .chip:hover { border-color:var(--blue); color:var(--blue); background:rgba(88,166,255,0.08); }
+
+    .answer-card {
+      background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg);
+      padding:24px; display:none; flex-direction:column; gap:16px; animation:fade-in 0.4s ease;
+    }
+    .answer-card.show { display:flex; }
+    .answer-header { display:flex; justify-content:space-between; align-items:center; }
+    .answer-body {
+      font-size:14.5px; line-height:1.7; color:var(--text); white-space:pre-wrap;
+      background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
+      padding:16px; max-height:350px; overflow-y:auto;
+    }
+    .dept-box {
+      background:rgba(88,166,255,0.08); border:1px solid rgba(88,166,255,0.2);
+      border-radius:var(--radius-sm); padding:12px 16px; font-size:13px; color:var(--text-muted);
+    }
+    .dept-box strong { color:var(--blue); display:block; margin-bottom:4px; }
+
+    .hist-item {
+      background:var(--card); border:1px solid var(--border); border-radius:var(--radius-sm);
+      padding:16px; margin-bottom:12px; transition:border-color 0.2s;
+    }
+    .hist-item:hover { border-color:var(--border-light); }
+    .hist-q { font-weight:600; font-size:14px; margin-bottom:6px; color:var(--text); }
+    .hist-a { font-size:13px; color:var(--text-muted); line-height:1.5; max-height:80px; overflow:hidden; text-overflow:ellipsis; }
+  </style>
+</head>
+<body>
+  <div class="bg-animated"></div>
+  <div id="toast-container"></div>
+
+  <nav class="navbar">
+    <a class="navbar-brand" href="homepage.html"><span class="brand-dot"></span>RMS AI</a>
+    <div style="display:flex; gap:14px; align-items:center;">
+      <a href="complaint.html" style="font-size:13px; color:var(--text-muted); text-decoration:none;">Hostel Complaints</a>
+      <a href="certificate.html" style="font-size:13px; color:var(--blue); text-decoration:none;">📜 Verify Certificate</a>
+      <span class="navbar-info">Logged in as <span id="nav_name">Student</span></span>
+    </div>
+  </nav>
+
+  <div class="page-wrap fade-in">
+    <h1>🎓 LPU AI Academic Advisor</h1>
+    <p class="sub">Instant AI assistance for fees, exams, results, UMS portal, certificates, placements & department queries.</p>
+
+    <div class="tabs">
+      <button class="tab-btn active" id="tabAsk" onclick="switchTab('ask')">💬 Ask Question</button>
+      <button class="tab-btn" id="tabHist" onclick="switchTab('hist')">📋 Query History</button>
+    </div>
+
+    <!-- ASK SECTION -->
+    <div id="secAsk" class="grid-2">
+      <div class="glass-card" style="padding:24px;">
+        <div class="form-group">
+          <label class="form-label" for="question">Your Academic Question</label>
+          <textarea class="form-input form-textarea" id="question"
+            placeholder="e.g. How do I apply for bonafide certificate on UMS? Or what is the backlog exam registration process?" style="min-height:130px;"></textarea>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <span style="font-size:12px; color:var(--text-dim); font-weight:600; text-transform:uppercase;">Quick Suggestions:</span>
+          <div class="quick-chips">
+            <span class="chip" onclick="fillQ('How do I apply for Bonafide Certificate on UMS?')">📜 Bonafide Certificate</span>
+            <span class="chip" onclick="fillQ('What is the procedure for fee fine waiver in LPU?')">💰 Fee Fine Waiver</span>
+            <span class="chip" onclick="fillQ('How to register for backlog exams on UMS portal?')">📝 Backlog Registration</span>
+            <span class="chip" onclick="fillQ('How to check attendance shortage and apply for duty leave?')">📊 Attendance & Duty Leave</span>
+            <span class="chip" onclick="fillQ('What are the placement eligibility criteria for CDC drives?')">💼 CDC Placement Drive</span>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-block" id="askBtn">
+          🤖 Get Instant AI Answer
+        </button>
+      </div>
+
+      <!-- ANSWER CARD -->
+      <div class="glass-card" style="padding:24px; display:flex; flex-direction:column; justify-content:center;">
+        <div class="answer-card" id="answerCard">
+          <div class="answer-header">
+            <span class="cat-badge" id="aCategory" style="font-size:12px; padding:4px 10px; border-radius:12px; background:rgba(88,166,255,0.15); color:var(--blue); font-weight:600;">Category</span>
+            <span id="aiPoweredBadge" style="font-size:11px; color:var(--green); font-weight:600;">✨ Gemini AI</span>
+          </div>
+
+          <div class="answer-body" id="aBody"></div>
+
+          <div class="dept-box">
+            <strong>📍 Official Department Contact:</strong>
+            <span id="aDept">—</span>
+          </div>
+        </div>
+
+        <div class="placeholder-panel" id="askPlaceholder" style="text-align:center; padding:40px 20px; color:var(--text-muted);">
+          <div style="font-size:40px; margin-bottom:12px; opacity:0.6;">🧠</div>
+          <p><strong>Ask any academic question</strong></p>
+          <p style="font-size:13px; margin-top:6px;">Our Gemini-powered AI will provide instant LPU-specific guidance and direct you to the correct department.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORY SECTION -->
+    <div id="secHist" style="display:none;">
+      <div id="histList"></div>
+    </div>
+  </div>
+
+  <script>
+    function toast(msg, type="info") {
+      const c = document.getElementById("toast-container");
+      const t = document.createElement("div"); t.className = `toast ${type}`; t.textContent = msg;
+      c.appendChild(t);
+      setTimeout(() => { t.style.animation = "slide-out 0.3s ease forwards"; setTimeout(() => t.remove(), 300); }, 3500);
+    }
+
+    const sid  = localStorage.getItem("student_id");
+    const name = localStorage.getItem("student_name") || "Student";
+    document.getElementById("nav_name").textContent = name;
+
+    if (!sid) {
+      toast("Please log in first.", "error");
+      setTimeout(() => { window.location.href = "login.html"; }, 1500);
+    }
+
+    function fillQ(text) {
+      document.getElementById("question").value = text;
+    }
+
+    function switchTab(t) {
+      if (t === 'ask') {
+        document.getElementById("secAsk").style.display = "grid";
+        document.getElementById("secHist").style.display = "none";
+        document.getElementById("tabAsk").classList.add("active");
+        document.getElementById("tabHist").classList.remove("active");
+      } else {
+        document.getElementById("secAsk").style.display = "none";
+        document.getElementById("secHist").style.display = "block";
+        document.getElementById("tabAsk").classList.remove("active");
+        document.getElementById("tabHist").classList.add("active");
+        loadHistory();
+      }
+    }
+
+    document.getElementById("askBtn").addEventListener("click", async () => {
+      const question = document.getElementById("question").value.trim();
+      const btn = document.getElementById("askBtn");
+
+      if (!question) { toast("Please type a question.", "error"); return; }
+
+      btn.disabled = true; btn.textContent = "🧠 Thinking…";
+
+      try {
+        const res = await fetch("/academic/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ student_id: sid, question })
+        });
+        const data = await res.json();
+
+        if (data.answer) {
+          document.getElementById("askPlaceholder").style.display = "none";
+          const card = document.getElementById("answerCard");
+          card.classList.add("show");
+
+          document.getElementById("aCategory").textContent = data.category;
+          document.getElementById("aBody").textContent = data.answer;
+          document.getElementById("aDept").textContent = data.department_ref;
+          document.getElementById("aiPoweredBadge").textContent = data.ai_powered ? "✨ Gemini AI" : "📚 Rule Guide";
+
+          toast("AI response generated!", "success");
+        } else {
+          toast(data.error || "Could not get answer.", "error");
+        }
+      } catch (e) {
+        toast("Server error. Try again.", "error");
+      } finally {
+        btn.disabled = false; btn.textContent = "🤖 Get Instant AI Answer";
+      }
+    });
+
+    async function loadHistory() {
+      const hl = document.getElementById("histList");
+      hl.innerHTML = '<div class="spinner"></div>';
+      try {
+        const res = await fetch(`/api/academic/history/${sid}`);
+        const data = await res.json();
+
+        if (!data || data.length === 0) {
+          hl.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>No academic queries asked yet.</p></div>';
+          return;
+        }
+
+        hl.innerHTML = data.map(q => `
+          <div class="hist-item fade-in">
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+              <span class="cat-badge" style="font-size:11px; padding:2px 8px; border-radius:10px; background:rgba(88,166,255,0.12); color:var(--blue); font-weight:600;">${q.category}</span>
+              <span style="font-size:11px; color:var(--text-dim);">${new Date(q.created_at).toLocaleDateString()}</span>
+            </div>
+            <div class="hist-q">Q: ${q.question}</div>
+            <div class="hist-a">A: ${q.ai_response}</div>
+          </div>
+        `).join("");
+      } catch {
+        hl.innerHTML = '<p style="color:var(--red);">Failed to load history.</p>';
+      }
+    }
+  </script>
+</body>
+</html>

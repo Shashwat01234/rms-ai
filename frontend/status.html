@@ -1,149 +1,169 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Check Complaint Status</title>
-    <style>
-        body {
-            font-family: Arial;
-            background: #eef2f3;
-            margin: 0;
-            padding: 0;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Track Complaint — RMS AI</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { padding:0; min-height:100vh; display:flex; flex-direction:column; }
+    .page-wrap { flex:1; max-width:620px; width:100%; margin:40px auto; padding:0 20px; }
+    h1 { font-size:24px; font-weight:700; margin-bottom:4px; }
+    .sub { color:var(--text-muted); font-size:14px; margin-bottom:28px; }
+    .search-row { display:flex; gap:10px; margin-bottom:28px; }
+    .search-row .form-input { flex:1; }
 
-        .navbar {
-            background: #0057b3;
-            padding: 15px 25px;
-            color: white;
-            font-size: 20px;
-        }
+    /* Timeline */
+    .timeline { display:none; flex-direction:column; gap:0; }
+    .timeline.show { display:flex; }
+    .tl-step { display:flex; gap:14px; position:relative; padding-bottom:24px; }
+    .tl-step:last-child { padding-bottom:0; }
+    .tl-step::before {
+      content:''; position:absolute; left:14px; top:30px;
+      width:2px; height:calc(100% - 10px);
+      background:var(--border);
+    }
+    .tl-step:last-child::before { display:none; }
+    .tl-dot {
+      width:30px; height:30px; border-radius:50%; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      font-size:14px; border:2px solid var(--border);
+      background:var(--surface); z-index:1;
+    }
+    .tl-dot.done  { background:var(--green);  border-color:var(--green);  }
+    .tl-dot.active{ background:var(--blue);   border-color:var(--blue);   box-shadow:0 0 0 4px rgba(88,166,255,0.2); }
+    .tl-content { flex:1; padding-top:3px; }
+    .tl-label { font-size:15px; font-weight:600; }
+    .tl-desc  { font-size:13px; color:var(--text-muted); margin-top:2px; }
 
-        .container {
-            width: 480px;
-            margin: auto;
-            margin-top: 40px;
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0px 0px 12px rgba(0,0,0,0.1);
-        }
-
-        h2 {
-            text-align: center;
-        }
-
-        input {
-            width: 100%;
-            padding: 12px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-            margin-top: 10px;
-        }
-
-        button {
-            width: 100%;
-            padding: 12px;
-            background: #007bff;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            margin-top: 15px;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background: #005dc1;
-        }
-
-        .result-box {
-            margin-top: 20px;
-            padding: 18px;
-            background: #e9f4ff;
-            border-radius: 10px;
-            display: none;
-        }
-
-        .back-btn {
-            width: 100%;
-            padding: 12px;
-            background: #444;
-            color: white;
-            margin-top: 15px;
-            border-radius: 6px;
-            cursor: pointer;
-            border: none;
-        }
-        .back-btn:hover {
-            background: #222;
-        }
-    </style>
+    .detail-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:20px; }
+    .detail-row  { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); font-size:14px; }
+    .detail-row:last-child { border-bottom:none; }
+    .detail-row .lbl { color:var(--text-muted); }
+  </style>
 </head>
 <body>
+  <div class="bg-animated"></div>
+  <div id="toast-container"></div>
 
-<div class="navbar">
-    Check Complaint Status — <span id="studentName"></span>
-</div>
+  <nav class="navbar">
+    <a class="navbar-brand" href="homepage.html"><span class="brand-dot"></span>RMS AI</a>
+    <span class="navbar-info">Logged in as <span id="navName">Student</span></span>
+  </nav>
 
-<div class="container">
-    <h2>Track Your Complaint</h2>
+  <div class="page-wrap fade-in">
+    <h1>Track Your Complaint</h1>
+    <p class="sub">Enter your Request ID to see the current status and details.</p>
 
-    <input id="reqID" placeholder="Enter your Request ID">
+    <div class="search-row">
+      <input class="form-input" id="reqID" placeholder="Paste your Request ID here…">
+      <button class="btn btn-primary" id="checkBtn" onclick="checkStatus()">Check</button>
+    </div>
 
-    <button onclick="checkStatus()">Check Status</button>
+    <div class="detail-card" id="detailBox" style="display:none;"></div>
 
-    <button class="back-btn" onclick="goBack()">Back to Dashboard</button>
+    <div class="timeline" id="timeline">
+      <div class="tl-step" id="step-submitted">
+        <div class="tl-dot">📨</div>
+        <div class="tl-content">
+          <div class="tl-label">Submitted</div>
+          <div class="tl-desc">Request received by the system</div>
+        </div>
+      </div>
+      <div class="tl-step" id="step-assigned">
+        <div class="tl-dot">👷</div>
+        <div class="tl-content">
+          <div class="tl-label">Assigned</div>
+          <div class="tl-desc" id="assignedDesc">Waiting for assignment</div>
+        </div>
+      </div>
+      <div class="tl-step" id="step-progress">
+        <div class="tl-dot">⚙️</div>
+        <div class="tl-content">
+          <div class="tl-label">In Progress</div>
+          <div class="tl-desc">Technician is working on it</div>
+        </div>
+      </div>
+      <div class="tl-step" id="step-resolved">
+        <div class="tl-dot">✅</div>
+        <div class="tl-content">
+          <div class="tl-label">Resolved</div>
+          <div class="tl-desc">Issue has been fixed</div>
+        </div>
+      </div>
+    </div>
 
-    <div id="result" class="result-box"></div>
-</div>
+    <div style="margin-top:20px; display:flex; gap:10px; flex-wrap:wrap;">
+      <a href="complaint.html" class="btn btn-outline" style="font-size:14px;">+ New Request</a>
+      <a href="history.html"   class="btn btn-outline" style="font-size:14px;">📋 My History</a>
+    </div>
+  </div>
 
-<script>
-// load student name from storage
-document.getElementById("studentName").innerText =
-    localStorage.getItem("student_name") || "Student";
+  <script>
+    function toast(msg,type="info"){const c=document.getElementById("toast-container");const t=document.createElement("div");t.className=`toast ${type}`;t.textContent=msg;c.appendChild(t);setTimeout(()=>{t.style.animation="slide-out 0.3s ease forwards";setTimeout(()=>t.remove(),300);},3500);}
 
-// Fetch complaint status
-function checkStatus() {
-    let id = document.getElementById("reqID").value.trim();
-    let box = document.getElementById("result");
+    document.getElementById("navName").textContent = localStorage.getItem("student_name") || "Student";
 
-    if (id === "") {
-        alert("Please enter a Request ID.");
-        return;
+    // Pre-fill if coming from complaint page
+    const urlId = new URLSearchParams(window.location.search).get("id");
+    if (urlId) { document.getElementById("reqID").value = urlId; checkStatus(); }
+
+    document.getElementById("reqID").addEventListener("keydown", e => { if(e.key==="Enter") checkStatus(); });
+
+    async function checkStatus() {
+      const id  = document.getElementById("reqID").value.trim();
+      const btn = document.getElementById("checkBtn");
+      if (!id) { toast("Please enter a Request ID","error"); return; }
+      btn.disabled=true; btn.textContent="Checking…";
+
+      try {
+        const res  = await fetch(`/get_status?id=${encodeURIComponent(id)}`);
+        const data = await res.json();
+        if (data.error) { toast(data.error,"error"); }
+        else { showDetails(data); }
+      } catch { toast("Server error. Try again.","error"); }
+      finally { btn.disabled=false; btn.textContent="Check"; }
     }
 
-    fetch(`http://127.0.0.1:5000/get_status?id=${id}`)
-    .then(res => res.json())
-    .then(data => {
-        box.style.display = "block";
+    function showDetails(d) {
+      const box = document.getElementById("detailBox");
+      box.style.display = "block";
+      
+      const isAiResolved = d.status === "ai_resolved" || d.status === "ai_answered" || !!d.ai_response;
+      const techDisplay  = d.technician || (isAiResolved ? "AI Answered" : "Not assigned");
+      
+      box.innerHTML = `
+        <div class="detail-row"><span class="lbl">Issue</span><span>${d.query}</span></div>
+        <div class="detail-row"><span class="lbl">Category</span><span>${d.category||"—"}</span></div>
+        <div class="detail-row"><span class="lbl">Technician</span><span>${techDisplay}</span></div>
+        <div class="detail-row"><span class="lbl">Scheduled</span><span>${d.assigned_time ? "Hour "+d.assigned_time+":00" : "—"}</span></div>
+        <div class="detail-row"><span class="lbl">Status</span><span class="badge badge-${isAiResolved ? 'resolved' : d.status}">${isAiResolved ? 'AI Answered' : d.status}</span></div>
+        ${d.ai_response ? `
+        <div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--border);">
+          <div style="font-size:12px; font-weight:700; color:var(--blue); margin-bottom:6px; display:flex; align-items:center; gap:6px;">✨ Instant AI Guidance / Answer</div>
+          <div style="font-size:13.5px; line-height:1.6; color:var(--text); background:var(--surface); padding:12px 14px; border-radius:var(--radius-sm); border:1px solid var(--border); white-space:pre-wrap;">${d.ai_response}</div>
+        </div>` : ''}
+      `;
 
-        if (data.error) {
-            box.innerHTML = `<b style="color:red;">${data.error}</b>`;
-            return;
-        }
+      // Timeline
+      const tl = document.getElementById("timeline");
+      tl.classList.add("show");
 
-        box.innerHTML = `
-            <h3>Status Details</h3>
+      const steps = ["submitted","assigned","in_progress","resolved"];
+      const statusMap = { pending:0, no_technician:0, assigned:1, in_progress:2, resolved:3, ai_resolved:3, ai_answered:3 };
+      const current = statusMap[d.status] ?? (isAiResolved ? 3 : 0);
 
-            <b>Query:</b> ${data.query}<br>
-            <b>Category:</b> ${data.category}<br>
-            <b>Technician:</b> ${data.technician || "Not assigned"}<br>
-            <b>Status:</b> <span style="color:blue;">${data.status}</span><br>
+      document.querySelector("#step-submitted .tl-dot").classList.toggle("done", current >= 0);
+      document.querySelector("#step-assigned  .tl-dot").classList.toggle("done", current >= 1 || isAiResolved);
+      document.querySelector("#step-progress  .tl-dot").classList.toggle("done", current >= 2 || isAiResolved);
+      document.querySelector("#step-resolved  .tl-dot").classList.toggle("done", current >= 3 || isAiResolved);
 
-            <hr>
-
-            <small>Use this page anytime to track your complaint.</small>
-        `;
-    })
-    .catch(err => {
-        box.style.display = "block";
-        box.innerHTML = "<b>Error fetching status. Make sure backend is running.</b>";
-    });
-}
-
-function goBack() {
-    window.location.href = "home.html";
-}
-</script>
-
+      if (d.technician) {
+        document.getElementById("assignedDesc").textContent = `Assigned to ${d.technician}`;
+      } else if (isAiResolved) {
+        document.getElementById("assignedDesc").textContent = `Handled instantly by Academic AI`;
+      }
+    }
+  </script>
 </body>
 </html>

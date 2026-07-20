@@ -1,89 +1,203 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Submit Complaint - RMS</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Submit Complaint — RMS AI</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { padding:0; min-height:100vh; display:flex; flex-direction:column; }
+    .page-wrap { flex:1; max-width:820px; width:100%; margin:0 auto; padding:28px 20px; }
+    h1 { font-size:24px; font-weight:700; margin-bottom:4px; }
+    .sub { color:var(--text-muted); font-size:14px; margin-bottom:28px; }
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #eef2f7;
-            margin: 0;
-            padding: 0;
-        }
+    .complaint-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+    @media(max-width:640px){ .complaint-grid { grid-template-columns:1fr; } }
 
-        .container {
-            width: 450px;
-            margin: 60px auto;
-            background: white;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.15);
-        }
+    .char-count { font-size:12px; color:var(--text-dim); text-align:right; margin-top:4px; }
 
-        h2 {
-            text-align: center;
-            margin-bottom: 15px;
-            font-size: 24px;
-        }
-
-        label {
-            font-weight: bold;
-            margin-top: 10px;
-        }
-
-        textarea {
-            width: 100%;
-            height: 120px;
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-            margin-top: 5px;
-            resize: none;
-        }
-
-        button {
-            width: 100%;
-            padding: 12px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            margin-top: 15px;
-            border-radius: 6px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #0056cc;
-        }
-
-        .info {
-            text-align: center;
-            margin-bottom: 10px;
-            font-size: 14px;
-            color: #333;
-        }
-    </style>
+    /* Result panel */
+    .result-panel { display:none; flex-direction:column; gap:16px; animation:fade-in 0.4s ease; }
+    .result-panel.show { display:flex; }
+    .result-title { font-size:16px; font-weight:700; color:var(--green); display:flex; align-items:center; gap:8px; }
+    .result-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); font-size:14px; }
+    .result-row:last-of-type { border-bottom:none; }
+    .result-row .label { color:var(--text-muted); }
+    .result-row .value { font-weight:600; color:var(--text); }
+    .req-id-box {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:var(--radius-sm); padding:10px 14px;
+      font-family:monospace; font-size:13px; color:var(--blue);
+      word-break:break-all; cursor:pointer; position:relative;
+    }
+    .req-id-box:hover::after { content:'Click to copy'; position:absolute; right:10px; top:50%; transform:translateY(-50%); font-size:11px; color:var(--text-dim); font-family:inherit; }
+    .dup-warning {
+      background:rgba(210,153,34,0.1); border:1px solid rgba(210,153,34,0.3);
+      border-radius:var(--radius-sm); padding:10px 14px;
+      font-size:13px; color:var(--orange);
+    }
+    .action-links { display:flex; gap:10px; flex-wrap:wrap; }
+    .placeholder-panel {
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      text-align:center; padding:40px 20px; color:var(--text-muted); height:100%;
+    }
+    .placeholder-panel .icon { font-size:40px; margin-bottom:12px; opacity:0.5; }
+  </style>
 </head>
-
 <body>
+  <div class="bg-animated"></div>
+  <div id="toast-container"></div>
 
-    <div class="container">
-        <h2>Submit Complaint</h2>
+  <nav class="navbar">
+    <a class="navbar-brand" href="homepage.html"><span class="brand-dot"></span>RMS AI</a>
+    <div style="display:flex; gap:14px; align-items:center;">
+      <a href="academic.html" style="font-size:13px; color:var(--purple); text-decoration:none;">🎓 Academic AI</a>
+      <a href="certificate.html" style="font-size:13px; color:var(--green); text-decoration:none;">📜 Verify Certificate</a>
+      <span class="navbar-info">Logged in as <span id="nav_name">Student</span></span>
+    </div>
+  </nav>
 
-        <div class="info">
-            Logged in as: <b id="student_name"></b>
+  <div class="page-wrap fade-in">
+    <h1>Submit a Complaint</h1>
+    <p class="sub">Describe your issue in plain English — our AI will route it to the right technician.</p>
+
+    <div class="complaint-grid">
+      <!-- Left: Form -->
+      <div class="glass-card" style="padding:24px;">
+        <div class="form-group">
+          <label class="form-label" for="query">Describe Your Issue</label>
+          <textarea class="form-input form-textarea" id="query"
+            placeholder="e.g. Fan not working in room 204, I'm free after 3pm..." style="min-height:150px;"></textarea>
+          <div class="char-count"><span id="charCount">0</span> / 500</div>
         </div>
 
-        <label>Your Issue</label>
-        <textarea id="query" placeholder="Describe your issue (e.g., fan not working, water leakage...)"></textarea>
+        <div class="form-group" style="margin-bottom:0;">
+          <p style="font-size:12px; color:var(--text-dim); margin-bottom:14px;">
+            💡 Tip: Mention your preferred time (e.g. "free at 4pm") for better scheduling.
+          </p>
+          <button class="btn btn-primary btn-block" id="submitBtn">
+            🚀 Submit Request
+          </button>
+          <div style="margin-top:10px;">
+            <a href="history.html" class="btn btn-outline btn-block" style="font-size:14px;">
+              📋 View My History
+            </a>
+          </div>
+        </div>
+      </div>
 
-        <button id="submitBtn">Submit Request</button>
+      <!-- Right: Result -->
+      <div class="glass-card" style="padding:24px; display:flex; flex-direction:column;">
+        <div class="result-panel" id="resultPanel">
+          <div class="result-title">✅ Request Submitted!</div>
+          <div id="dupWarning" class="dup-warning" style="display:none;">
+            ⚠️ This looks similar to a previous request. Duplicate warning issued.
+          </div>
+          <p style="font-size:13px; color:var(--text-muted);">Save your Request ID to track this complaint:</p>
+          <div class="req-id-box" id="reqIdBox" onclick="copyId()"></div>
+          <div class="result-row"><span class="label">Category</span><span class="value" id="rCategory">—</span></div>
+          <div class="result-row"><span class="label">Technician</span><span class="value" id="rTechnician">—</span></div>
+          <div class="result-row"><span class="label">Scheduled Time</span><span class="value" id="rTime">—</span></div>
+          <div class="result-row"><span class="label">Status</span><span id="rStatus">—</span></div>
+          <div id="aiAnswerBox" style="display:none; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:14px; margin-top:8px;">
+            <div style="font-size:12px; font-weight:700; color:var(--blue); margin-bottom:6px; display:flex; align-items:center; gap:6px;">✨ Instant AI Answer / Guidance</div>
+            <div id="aiAnswerText" style="font-size:13.5px; line-height:1.6; color:var(--text); white-space:pre-wrap; max-height:220px; overflow-y:auto;"></div>
+          </div>
+          <div class="action-links" style="margin-top:14px;">
+            <a href="status.html" class="btn btn-outline" style="flex:1; font-size:13px;">🔍 Track Status</a>
+            <button onclick="resetForm()" class="btn btn-primary" style="flex:1; font-size:13px;">+ New Request</button>
+          </div>
+        </div>
+
+        <div class="placeholder-panel" id="placeholder">
+          <div class="icon">🤖</div>
+          <p><strong>AI Routing Active</strong></p>
+          <p style="font-size:13px; margin-top:6px;">Your complaint will be classified and a free technician will be assigned automatically.</p>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <script src="complaint.js"></script>
+  <script>
+    // ── Toast ──
+    function toast(msg, type="info") {
+      const c=document.getElementById("toast-container");
+      const t=document.createElement("div"); t.className=`toast ${type}`; t.textContent=msg;
+      c.appendChild(t);
+      setTimeout(()=>{ t.style.animation="slide-out 0.3s ease forwards"; setTimeout(()=>t.remove(),300); },3500);
+    }
 
+    // ── Init ──
+    const name = localStorage.getItem("student_name") || "Student";
+    const sid  = localStorage.getItem("student_id");
+    document.getElementById("nav_name").textContent = name;
+    if (!sid) { toast("Session expired. Please log in.","error"); setTimeout(()=>{window.location.href="login.html";},1500); }
+
+    // ── Char counter ──
+    document.getElementById("query").addEventListener("input", function() {
+      const len = Math.min(this.value.length, 500);
+      document.getElementById("charCount").textContent = len;
+      if (this.value.length > 500) this.value = this.value.slice(0,500);
+    });
+
+    // ── Submit ──
+    document.getElementById("submitBtn").addEventListener("click", async () => {
+      const query = document.getElementById("query").value.trim();
+      const btn   = document.getElementById("submitBtn");
+      if (!query) { toast("Please describe your issue.","error"); return; }
+      if (!sid)   { toast("Please log in first.","error"); return; }
+
+      btn.disabled=true; btn.textContent="🔄 Processing…";
+      try {
+        const res  = await fetch("/submit_request", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({ student_id: sid, query })
+        });
+        const data = await res.json();
+        if (data.request_id) {
+          showResult(data);
+        } else {
+          toast(data.error || "Failed to submit.","error");
+        }
+      } catch { toast("Server error. Try again.","error"); }
+      finally { btn.disabled=false; btn.textContent="🚀 Submit Request"; }
+    });
+
+    function showResult(d) {
+      document.getElementById("placeholder").style.display="none";
+      document.getElementById("resultPanel").classList.add("show");
+      document.getElementById("reqIdBox").textContent = d.request_id;
+      window._lastReqId = d.request_id;
+      document.getElementById("rCategory").textContent = d.category || "—";
+      document.getElementById("rTechnician").textContent = d.technician || (d.ai_response ? "AI Answered" : "Not assigned");
+      const t = d.assigned_time ? `Hour ${d.assigned_time}:00` : (d.start_time || "—");
+      document.getElementById("rTime").textContent = t;
+      const sb = document.getElementById("rStatus");
+      sb.innerHTML = `<span class="badge badge-${d.status}">${d.status}</span>`;
+      
+      if (d.ai_response) {
+        document.getElementById("aiAnswerBox").style.display = "block";
+        document.getElementById("aiAnswerText").textContent = d.ai_response;
+      } else {
+        document.getElementById("aiAnswerBox").style.display = "none";
+      }
+
+      if (d.is_duplicate) document.getElementById("dupWarning").style.display="block";
+      toast("Request submitted successfully!","success");
+    }
+
+    function copyId() {
+      const id = window._lastReqId;
+      if (id) { navigator.clipboard.writeText(id); toast("Request ID copied!","success"); }
+    }
+
+    function resetForm() {
+      document.getElementById("query").value="";
+      document.getElementById("charCount").textContent="0";
+      document.getElementById("resultPanel").classList.remove("show");
+      document.getElementById("dupWarning").style.display="none";
+      document.getElementById("placeholder").style.display="flex";
+    }
+  </script>
 </body>
 </html>
