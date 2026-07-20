@@ -2,7 +2,7 @@ services:
   - type: web
     name: rms-ai
     env: python
-    buildCommand: "pip install -r requirements.txt && python database.py"
+    buildCommand: "pip install -r requirements.txt"
     startCommand: "gunicorn server:app"
     plan: free
     envVars:
