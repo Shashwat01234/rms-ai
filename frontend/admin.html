@@ -95,8 +95,12 @@
             <option value="">All Statuses</option>
             <option value="pending">Pending</option>
             <option value="assigned">Assigned</option>
+            <option value="assigned_busy">Assigned (Busy Tech)</option>
+            <option value="matched">Matched</option>
             <option value="in_progress">In Progress</option>
             <option value="resolved">Resolved</option>
+            <option value="ai_resolved">AI Resolved</option>
+            <option value="emergency">Emergency</option>
             <option value="no_technician">No Technician</option>
           </select>
         </div>
@@ -139,6 +143,12 @@
 
       <!-- Technicians Tab -->
       <div id="tab-technicians" style="display:none;">
+        <div style="margin-bottom:16px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <button class="btn btn-amber" onclick="resetTechLoads()" style="font-size:13px; padding:8px 16px;">
+            🔄 Reset All Technician Loads
+          </button>
+          <span style="font-size:12px; color:var(--text-dim);">Use this if technicians appear busy but have no active tasks.</span>
+        </div>
         <div class="tech-grid" id="techGrid"></div>
       </div>
     </div>
@@ -372,6 +382,16 @@
       document.getElementById("tab-academic").style.display     = tab==="academic"     ? "block" : "none";
       document.getElementById("tab-certificates").style.display = tab==="certificates" ? "block" : "none";
       document.getElementById("tab-technicians").style.display  = tab==="technicians"  ? "block" : "none";
+    }
+
+    async function resetTechLoads() {
+      if (!confirm('Reset all technician loads to 0 and mark everyone as free?')) return;
+      try {
+        const res = await fetch('/admin/reset_technicians', { method:'POST', credentials:'include' });
+        const data = await res.json();
+        if (data.message) { toast('All technician loads reset!', 'success'); loadTechnicians(); loadStats(); }
+        else toast(data.error || 'Failed', 'error');
+      } catch { toast('Server error', 'error'); }
     }
 
     checkAuth();

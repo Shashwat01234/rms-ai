@@ -162,10 +162,21 @@ def init_db():
     cur.execute("SELECT COUNT(*) FROM technicians")
     if cur.fetchone()[0] == 0:
         seeds = [
-            ("Ravi",   "electrician", "10:00", "18:00", 0, "free", "tech123"),
-            ("Suresh", "plumber",     "9:00",  "17:00", 0, "free", "tech123"),
-            ("Aman",   "carpenter",   "8:00",  "16:00", 0, "free", "tech123"),
-            ("Neha",   "painter",     "11:00", "19:00", 0, "free", "tech123"),
+            # Core roles
+            ("Ravi",     "electrician",  "8:00",  "18:00", 0, "free", "tech123"),
+            ("Vikram",   "electrician",  "12:00", "21:00", 0, "free", "tech123"),
+            ("Suresh",   "plumber",      "9:00",  "17:00", 0, "free", "tech123"),
+            ("Deepak",   "plumber",      "13:00", "21:00", 0, "free", "tech123"),
+            ("Aman",     "carpenter",    "8:00",  "16:00", 0, "free", "tech123"),
+            ("Neha",     "painter",      "10:00", "18:00", 0, "free", "tech123"),
+            # Extended roles
+            ("Priya",    "housekeeping", "6:00",  "14:00", 0, "free", "tech123"),
+            ("Sunita",   "housekeeping", "14:00", "22:00", 0, "free", "tech123"),
+            ("Karan",    "it_support",   "9:00",  "18:00", 0, "free", "tech123"),
+            ("Rohit",    "security",     "0:00",  "12:00", 0, "free", "tech123"),
+            ("Manoj",    "security",     "12:00", "24:00", 0, "free", "tech123"),
+            ("Santosh",  "mess_manager", "6:00",  "15:00", 0, "free", "tech123"),
+            ("Lakshmi",  "laundry",      "8:00",  "17:00", 0, "free", "tech123"),
         ]
         for t in seeds:
             if IS_POSTGRES:
@@ -174,6 +185,30 @@ def init_db():
             else:
                 cur.execute(
                     "INSERT OR IGNORE INTO technicians VALUES (?,?,?,?,?,?,?)", t)
+    else:
+        # Ensure extended-role technicians exist (upsert-safe)
+        extended = [
+            ("Vikram",  "electrician",  "12:00", "21:00"),
+            ("Deepak",  "plumber",      "13:00", "21:00"),
+            ("Priya",   "housekeeping", "6:00",  "14:00"),
+            ("Sunita",  "housekeeping", "14:00", "22:00"),
+            ("Karan",   "it_support",   "9:00",  "18:00"),
+            ("Rohit",   "security",     "0:00",  "12:00"),
+            ("Manoj",   "security",     "12:00", "24:00"),
+            ("Santosh", "mess_manager", "6:00",  "15:00"),
+            ("Lakshmi", "laundry",      "8:00",  "17:00"),
+        ]
+        for name, role, s, e in extended:
+            if IS_POSTGRES:
+                cur.execute(
+                    "INSERT INTO technicians (name,role,start_time,end_time,current_load,status,password) "
+                    "VALUES (%s,%s,%s,%s,0,'free','tech123') ON CONFLICT DO NOTHING",
+                    (name, role, s, e))
+            else:
+                cur.execute(
+                    "INSERT OR IGNORE INTO technicians (name,role,start_time,end_time,current_load,status,password) "
+                    "VALUES (?,?,?,?,0,'free','tech123')",
+                    (name, role, s, e))
 
     conn.commit()
     conn.close()
@@ -214,29 +249,55 @@ def get_technician_by_credentials(name, password):
     )
 
 
-def increment_load(name):
-    execute(
-        "UPDATE technicians SET current_load=current_load+1, status='busy' WHERE name=?",
-        (name,), commit=True
-    )
+def increment_load(name: str):
+    """Increment load. Mark busy only when load exceeds 3 concurrent tasks."""
+    execute("""
+        UPDATE technicians
+        SET current_load = current_load + 1,
+            status = CASE WHEN current_load + 1 >= 3 THEN 'busy' ELSE 'free' END
+        WHERE name=?
+    """, (name,), commit=True)
 
 
-def decrement_load(name):
-    # SQLite and PostgreSQL handle MAX differently in UPDATE
+def decrement_load(name: str):
+    """Decrement load. Reset to free when no tasks remain."""
     if IS_POSTGRES:
         execute("""
             UPDATE technicians
             SET current_load = GREATEST(current_load - 1, 0),
-                status = CASE WHEN current_load - 1 <= 0 THEN 'free' ELSE 'busy' END
+                status = CASE WHEN GREATEST(current_load - 1, 0) < 3 THEN 'free' ELSE 'busy' END
             WHERE name=?
         """, (name,), commit=True)
     else:
         execute("""
             UPDATE technicians
             SET current_load = MAX(current_load - 1, 0),
-                status = CASE WHEN current_load - 1 <= 0 THEN 'free' ELSE 'busy' END
+                status = CASE WHEN MAX(current_load - 1, 0) < 3 THEN 'free' ELSE 'busy' END
             WHERE name=?
         """, (name,), commit=True)
+
+
+def reset_technician_loads():
+    """Admin tool: reset all technicians to free/0 load (use when data is stale)."""
+    execute(
+        "UPDATE technicians SET current_load=0, status='free'",
+        commit=True
+    )
+
+
+def get_technicians_by_role(role: str):
+    """Returns ALL technicians for a role ordered by current load (lowest first)."""
+    return execute(
+        "SELECT * FROM technicians WHERE role=? ORDER BY current_load ASC, status ASC",
+        (role,), fetchall=True
+    )
+
+
+def get_all_technicians():
+    return execute(
+        "SELECT name, role, start_time, end_time, current_load, status FROM technicians",
+        fetchall=True
+    )
 
 
 # ──────────────────────────────────────────────

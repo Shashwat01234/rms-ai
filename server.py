@@ -51,17 +51,13 @@ def _ml_predict_category(query: str) -> str | None:
 
 def find_technician(role: str, student_time: int | None = None):
     """
-    Find the best available technician for a given role.
-    Returns (name, start_time, end_time, assigned_slot, status_code).
-    Time matching is fixed: parses 'HH:MM' format correctly.
+    Find best available technician for a role.
+    Priority: free + time match > free (any) > least-loaded busy > no one
     """
-    techs = db.get_technicians_by_role(role)
-    free = [t for t in (techs or []) if str(t.get("status", "")).lower() == "free"]
-
-    if not free:
+    techs = db.get_technicians_by_role(role)  # ordered by load ASC
+    if not techs:
         return None, None, None, None, "no_technician"
 
-    # Parse HH:MM time format into integer hours
     def parse_hour(time_str: str) -> int | None:
         try:
             if ":" in str(time_str):
@@ -70,19 +66,25 @@ def find_technician(role: str, student_time: int | None = None):
         except (ValueError, TypeError):
             return None
 
-    # Try to match student's preferred time
+    free_techs = [t for t in techs if str(t.get("status", "")).lower() == "free"]
+    # If all busy, still use the full list (least-loaded first)
+    candidate_pool = free_techs if free_techs else techs
+
+    # Try to match student's preferred time window
     if student_time is not None:
-        for t in free:
+        for t in candidate_pool:
             start = parse_hour(t.get("start_time", ""))
             end   = parse_hour(t.get("end_time", ""))
             if start is not None and end is not None:
                 if start <= int(student_time) <= end:
-                    return t["name"], t["start_time"], t["end_time"], student_time, "matched"
+                    status_label = "matched" if t in free_techs else "assigned_busy"
+                    return t["name"], t["start_time"], t["end_time"], student_time, status_label
 
-    # No time preference — assign technician with lowest load
-    best = free[0]
+    # No time match — pick least-loaded from pool
+    best = candidate_pool[0]
+    status_label = "assigned" if best in free_techs else "assigned_busy"
     return (best["name"], best["start_time"], best["end_time"],
-            parse_hour(best.get("start_time", "")), "assigned")
+            parse_hour(best.get("start_time", "")), status_label)
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -281,6 +283,14 @@ def admin_logout():
 @app.route("/admin/check_auth", methods=["GET"])
 def admin_check_auth():
     return jsonify({"authenticated": bool(session.get("admin_logged_in"))})
+
+
+@app.route("/admin/reset_technicians", methods=["POST"])
+@admin_required
+def admin_reset_technicians():
+    """Reset all technician loads to 0 and status to free."""
+    db.reset_technician_loads()
+    return jsonify({"message": "All technician loads reset to 0 and status set to free."})
 
 
 @app.route("/admin/get_all_requests", methods=["GET"])
