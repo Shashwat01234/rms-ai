@@ -37,9 +37,9 @@
     .answer-card.show { display:flex; }
     .answer-header { display:flex; justify-content:space-between; align-items:center; }
     .answer-body {
-      font-size:14.5px; line-height:1.7; color:var(--text); white-space:pre-wrap;
+      font-size:14.5px; line-height:1.7; color:var(--text);
       background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
-      padding:16px; max-height:350px; overflow-y:auto;
+      padding:16px; max-height:380px; overflow-y:auto;
     }
     .dept-box {
       background:rgba(88,166,255,0.08); border:1px solid rgba(88,166,255,0.2);
@@ -141,6 +141,23 @@
       setTimeout(() => { t.style.animation = "slide-out 0.3s ease forwards"; setTimeout(() => t.remove(), 300); }, 3500);
     }
 
+    // Markdown-lite renderer (XSS-safe)
+    function renderMarkdown(md) {
+      if (!md) return "";
+      let html = md
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+        .replace(/\*(.+?)\*/g, "<em>$1</em>")
+        .replace(/`(.+?)`/g, "<code>$1</code>")
+        .replace(/^### (.+)$/gm, "<h3>$1</h3>")
+        .replace(/^(\d+)\. (.+)$/gm, "<li>$2</li>")
+        .replace(/^[-•] (.+)$/gm, "<li>$1</li>")
+        .replace(/\n\n/g, "</p><p>")
+        .replace(/\n/g, "<br>");
+      html = html.replace(/(<li>.*<\/li>)+/g, m => `<ol>${m}</ol>`);
+      return `<p>${html}</p>`;
+    }
+
     const sid  = localStorage.getItem("student_id");
     const name = localStorage.getItem("student_name") || "Student";
     document.getElementById("nav_name").textContent = name;
@@ -174,6 +191,7 @@
       const btn = document.getElementById("askBtn");
 
       if (!question) { toast("Please type a question.", "error"); return; }
+      if (question.length < 4) { toast("Please be more specific.", "error"); return; }
 
       btn.disabled = true; btn.textContent = "🧠 Thinking…";
 
@@ -191,11 +209,16 @@
           card.classList.add("show");
 
           document.getElementById("aCategory").textContent = data.category;
-          document.getElementById("aBody").textContent = data.answer;
+          // Render markdown in answer
+          document.getElementById("aBody").innerHTML = renderMarkdown(data.answer);
+          document.getElementById("aBody").classList.add("md-render");
           document.getElementById("aDept").textContent = data.department_ref;
-          document.getElementById("aiPoweredBadge").textContent = data.ai_powered ? "✨ Gemini AI" : "📚 Rule Guide";
 
-          toast("AI response generated!", "success");
+          let badge = data.ai_powered ? "✨ Gemini AI" : "📚 Knowledge Base";
+          if (data.from_cache) badge += " (cached)";
+          document.getElementById("aiPoweredBadge").textContent = badge;
+
+          toast("AI response ready!", "success");
         } else {
           toast(data.error || "Could not get answer.", "error");
         }

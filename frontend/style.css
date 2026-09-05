@@ -198,6 +198,13 @@ body {
 .badge-in_progress::before { background:var(--purple); box-shadow:0 0 6px var(--purple); }
 .badge-no_technician { background:rgba(248,81,73,0.15); color:var(--red); }
 .badge-no_technician::before { background:var(--red); }
+.badge-ai_resolved { background:rgba(88,166,255,0.15); color:var(--blue); }
+.badge-ai_resolved::before { background:var(--blue); box-shadow:0 0 6px var(--blue); }
+.badge-matched     { background:rgba(63,185,80,0.15); color:var(--green); }
+.badge-matched::before { background:var(--green); box-shadow:0 0 6px var(--green); }
+.badge-emergency   { background:rgba(248,81,73,0.2); color:var(--red); border:1px solid rgba(248,81,73,0.4); animation: pulse-red 1.5s infinite; }
+.badge-emergency::before { background:var(--red); }
+@keyframes pulse-red { 0%,100%{box-shadow:0 0 0 0 rgba(248,81,73,0.4);} 50%{box-shadow:0 0 0 4px rgba(248,81,73,0);} }
 
 /* ── Toast Notification ── */
 #toast-container {
@@ -351,3 +358,35 @@ body {
 @media (max-width: 480px) {
   .stats-grid { grid-template-columns: 1fr 1fr; }
 }
+
+/* ── Markdown Lite Renderer (for AI responses) ── */
+.md-render p         { margin: 0 0 10px; }
+.md-render strong    { color: var(--text); font-weight: 700; }
+.md-render em        { color: var(--text-muted); font-style: italic; }
+.md-render ol        { padding-left: 20px; margin: 8px 0; }
+.md-render ul        { padding-left: 20px; margin: 8px 0; list-style: disc; }
+.md-render li        { margin-bottom: 6px; line-height: 1.6; }
+.md-render code      { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; font-size: 13px; color: var(--blue); }
+.md-render a         { color: var(--blue); text-decoration: underline; }
+.md-render hr        { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+.md-render h3        { font-size: 15px; font-weight: 700; margin: 12px 0 6px; color: var(--text); }
+
+/* ── NLP Confidence Pill ── */
+.nlp-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(63,185,80,0.1); border: 1px solid rgba(63,185,80,0.2);
+  border-radius: 20px; padding: 3px 10px;
+  font-size: 11px; font-weight: 600; color: var(--green);
+}
+.nlp-pill.low  { background:rgba(248,81,73,0.1); border-color:rgba(248,81,73,0.2); color:var(--red); }
+.nlp-pill.mid  { background:rgba(210,153,34,0.1); border-color:rgba(210,153,34,0.2); color:var(--orange); }
+
+/* ── Urgency indicator ── */
+.urgency-tag {
+  display:inline-flex; align-items:center; gap:4px;
+  font-size:11px; font-weight:600; padding:2px 8px; border-radius:10px;
+}
+.urgency-high      { background:rgba(248,81,73,0.1); color:var(--red); }
+.urgency-medium    { background:rgba(210,153,34,0.1); color:var(--orange); }
+.urgency-low       { background:rgba(63,185,80,0.1); color:var(--green); }
+.urgency-emergency { background:rgba(248,81,73,0.2); color:var(--red); animation:pulse-red 1.5s infinite; }

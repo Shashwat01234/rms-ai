@@ -4,10 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Submit Complaint — RMS AI</title>
+  <meta name="description" content="Submit hostel maintenance complaints. AI routes your request to the right technician automatically.">
   <link rel="stylesheet" href="style.css">
   <style>
     body { padding:0; min-height:100vh; display:flex; flex-direction:column; }
-    .page-wrap { flex:1; max-width:820px; width:100%; margin:0 auto; padding:28px 20px; }
+    .page-wrap { flex:1; max-width:880px; width:100%; margin:0 auto; padding:28px 20px; }
     h1 { font-size:24px; font-weight:700; margin-bottom:4px; }
     .sub { color:var(--text-muted); font-size:14px; margin-bottom:28px; }
 
@@ -16,8 +17,18 @@
 
     .char-count { font-size:12px; color:var(--text-dim); text-align:right; margin-top:4px; }
 
+    /* NLP live preview bar */
+    .nlp-preview {
+      display:none; margin-top:10px; padding:10px 14px;
+      background:rgba(88,166,255,0.05); border:1px solid rgba(88,166,255,0.15);
+      border-radius:var(--radius-sm); font-size:12px; color:var(--text-muted);
+      animation:fade-in 0.3s ease;
+    }
+    .nlp-preview.show { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+    .nlp-preview-label { font-weight:600; color:var(--text-dim); margin-right:4px; }
+
     /* Result panel */
-    .result-panel { display:none; flex-direction:column; gap:16px; animation:fade-in 0.4s ease; }
+    .result-panel { display:none; flex-direction:column; gap:14px; animation:fade-in 0.4s ease; }
     .result-panel.show { display:flex; }
     .result-title { font-size:16px; font-weight:700; color:var(--green); display:flex; align-items:center; gap:8px; }
     .result-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); font-size:14px; }
@@ -42,6 +53,20 @@
       text-align:center; padding:40px 20px; color:var(--text-muted); height:100%;
     }
     .placeholder-panel .icon { font-size:40px; margin-bottom:12px; opacity:0.5; }
+
+    /* AI Answer box */
+    .ai-answer-box {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:var(--radius-sm); padding:14px; margin-top:4px;
+    }
+    .ai-answer-header {
+      font-size:12px; font-weight:700; color:var(--blue);
+      margin-bottom:8px; display:flex; align-items:center; gap:6px;
+    }
+    .ai-answer-body {
+      font-size:13.5px; line-height:1.65; color:var(--text);
+      max-height:240px; overflow-y:auto;
+    }
   </style>
 </head>
 <body>
@@ -59,7 +84,7 @@
 
   <div class="page-wrap fade-in">
     <h1>Submit a Complaint</h1>
-    <p class="sub">Describe your issue in plain English — our AI will route it to the right technician.</p>
+    <p class="sub">Describe your issue in plain English — our AI will understand and route it to the right technician.</p>
 
     <div class="complaint-grid">
       <!-- Left: Form -->
@@ -71,9 +96,19 @@
           <div class="char-count"><span id="charCount">0</span> / 500</div>
         </div>
 
+        <!-- Live NLP Preview -->
+        <div class="nlp-preview" id="nlpPreview">
+          <span class="nlp-preview-label">🧠 AI detected:</span>
+          <span id="nlpIntent"></span>
+          <span id="nlpRole"></span>
+          <span id="nlpUrgency"></span>
+          <span id="nlpRoom"></span>
+          <span id="nlpTime"></span>
+        </div>
+
         <div class="form-group" style="margin-bottom:0;">
           <p style="font-size:12px; color:var(--text-dim); margin-bottom:14px;">
-            💡 Tip: Mention your preferred time (e.g. "free at 4pm") for better scheduling.
+            💡 Tip: Mention your preferred time (e.g. "free at 4pm") and room number for faster scheduling.
           </p>
           <button class="btn btn-primary btn-block" id="submitBtn">
             🚀 Submit Request
@@ -91,19 +126,23 @@
         <div class="result-panel" id="resultPanel">
           <div class="result-title">✅ Request Submitted!</div>
           <div id="dupWarning" class="dup-warning" style="display:none;">
-            ⚠️ This looks similar to a previous request. Duplicate warning issued.
+            ⚠️ Similar to a previous open request. Flagged as potential duplicate.
           </div>
           <p style="font-size:13px; color:var(--text-muted);">Save your Request ID to track this complaint:</p>
           <div class="req-id-box" id="reqIdBox" onclick="copyId()"></div>
+
           <div class="result-row"><span class="label">Category</span><span class="value" id="rCategory">—</span></div>
           <div class="result-row"><span class="label">Technician</span><span class="value" id="rTechnician">—</span></div>
           <div class="result-row"><span class="label">Scheduled Time</span><span class="value" id="rTime">—</span></div>
+          <div class="result-row" id="urgencyRow" style="display:none;"><span class="label">Urgency</span><span id="rUrgency"></span></div>
           <div class="result-row"><span class="label">Status</span><span id="rStatus">—</span></div>
-          <div id="aiAnswerBox" style="display:none; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:14px; margin-top:8px;">
-            <div style="font-size:12px; font-weight:700; color:var(--blue); margin-bottom:6px; display:flex; align-items:center; gap:6px;">✨ Instant AI Answer / Guidance</div>
-            <div id="aiAnswerText" style="font-size:13.5px; line-height:1.6; color:var(--text); white-space:pre-wrap; max-height:220px; overflow-y:auto;"></div>
+
+          <div class="ai-answer-box" id="aiAnswerBox" style="display:none;">
+            <div class="ai-answer-header">✨ AI Response / Guidance</div>
+            <div class="ai-answer-body md-render" id="aiAnswerText"></div>
           </div>
-          <div class="action-links" style="margin-top:14px;">
+
+          <div class="action-links" style="margin-top:10px;">
             <a href="status.html" class="btn btn-outline" style="flex:1; font-size:13px;">🔍 Track Status</a>
             <button onclick="resetForm()" class="btn btn-primary" style="flex:1; font-size:13px;">+ New Request</button>
           </div>
@@ -112,91 +151,185 @@
         <div class="placeholder-panel" id="placeholder">
           <div class="icon">🤖</div>
           <p><strong>AI Routing Active</strong></p>
-          <p style="font-size:13px; margin-top:6px;">Your complaint will be classified and a free technician will be assigned automatically.</p>
+          <p style="font-size:13px; margin-top:6px;">Your complaint will be understood by our NLP engine and assigned to the right technician automatically.</p>
         </div>
       </div>
     </div>
   </div>
 
   <script>
-    // ── Toast ──
+    // ── Helpers ─────────────────────────────────────────────────────
     function toast(msg, type="info") {
-      const c=document.getElementById("toast-container");
-      const t=document.createElement("div"); t.className=`toast ${type}`; t.textContent=msg;
+      const c = document.getElementById("toast-container");
+      const t = document.createElement("div"); t.className = `toast ${type}`; t.textContent = msg;
       c.appendChild(t);
-      setTimeout(()=>{ t.style.animation="slide-out 0.3s ease forwards"; setTimeout(()=>t.remove(),300); },3500);
+      setTimeout(() => { t.style.animation = "slide-out 0.3s ease forwards"; setTimeout(() => t.remove(), 300); }, 3500);
     }
 
-    // ── Init ──
+    // XSS-safe text setter
+    function setText(id, val) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val || "";
+    }
+
+    // Simple markdown-lite renderer (bold, numbered lists, bullets, line breaks)
+    function renderMarkdown(md) {
+      if (!md) return "";
+      let html = md
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")  // XSS escape
+        .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")                    // **bold**
+        .replace(/\*(.+?)\*/g, "<em>$1</em>")                                // *italic*
+        .replace(/`(.+?)`/g, "<code>$1</code>")                              // `code`
+        .replace(/^### (.+)$/gm, "<h3>$1</h3>")                              // ### heading
+        .replace(/^(\d+)\. (.+)$/gm, "<li>$2</li>")                          // 1. list
+        .replace(/^[-•] (.+)$/gm, "<li>$2</li>")                             // - bullet
+        .replace(/\n\n/g, "</p><p>")                                          // paragraphs
+        .replace(/\n/g, "<br>");
+      // wrap orphan list items
+      html = html.replace(/(<li>.*<\/li>)+/g, m => `<ol>${m}</ol>`);
+      return `<p>${html}</p>`;
+    }
+
+    // ── Init ─────────────────────────────────────────────────────────
     const name = localStorage.getItem("student_name") || "Student";
     const sid  = localStorage.getItem("student_id");
     document.getElementById("nav_name").textContent = name;
-    if (!sid) { toast("Session expired. Please log in.","error"); setTimeout(()=>{window.location.href="login.html";},1500); }
+    if (!sid) { toast("Session expired. Please log in.", "error"); setTimeout(() => window.location.href = "login.html", 1500); }
 
-    // ── Char counter ──
-    document.getElementById("query").addEventListener("input", function() {
+    // ── Char counter ──────────────────────────────────────────────────
+    const queryEl = document.getElementById("query");
+    queryEl.addEventListener("input", function() {
       const len = Math.min(this.value.length, 500);
       document.getElementById("charCount").textContent = len;
-      if (this.value.length > 500) this.value = this.value.slice(0,500);
+      if (this.value.length > 500) this.value = this.value.slice(0, 500);
+      schedulNlpPreview();
     });
 
-    // ── Submit ──
-    document.getElementById("submitBtn").addEventListener("click", async () => {
-      const query = document.getElementById("query").value.trim();
-      const btn   = document.getElementById("submitBtn");
-      if (!query) { toast("Please describe your issue.","error"); return; }
-      if (!sid)   { toast("Please log in first.","error"); return; }
+    // ── Live NLP Preview (debounced) ──────────────────────────────────
+    let _nlpTimer = null;
+    function schedulNlpPreview() {
+      clearTimeout(_nlpTimer);
+      const q = queryEl.value.trim();
+      if (q.length < 8) { document.getElementById("nlpPreview").classList.remove("show"); return; }
+      _nlpTimer = setTimeout(() => fetchNlpPreview(q), 600);
+    }
 
-      btn.disabled=true; btn.textContent="🔄 Processing…";
+    async function fetchNlpPreview(q) {
+      try {
+        const res  = await fetch("/api/nlp/analyze", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({query: q}) });
+        const data = await res.json();
+        if (data.error) return;
+
+        const preview = document.getElementById("nlpPreview");
+        preview.classList.add("show");
+
+        // Intent chip
+        const intentEl = document.getElementById("nlpIntent");
+        const intentColor = data.intent === "maintenance" ? "var(--blue)" : data.intent === "emergency" ? "var(--red)" : "var(--purple)";
+        intentEl.innerHTML = `<span style="background:rgba(88,166,255,0.1); border:1px solid rgba(88,166,255,0.2); border-radius:10px; padding:2px 8px; color:${intentColor}; font-size:11px; font-weight:600;">${data.intent}</span>`;
+
+        // Role chip
+        const roleEl = document.getElementById("nlpRole");
+        roleEl.innerHTML = data.role ? `<span style="background:rgba(63,185,80,0.1); border:1px solid rgba(63,185,80,0.2); border-radius:10px; padding:2px 8px; color:var(--green); font-size:11px; font-weight:600;">→ ${data.role.replace("_"," ")}</span>` : "";
+
+        // Urgency
+        const urgEl = document.getElementById("nlpUrgency");
+        const urgColors = { high:"var(--red)", emergency:"var(--red)", medium:"var(--orange)", low:"var(--green)" };
+        const urg = data.entities?.urgency || "medium";
+        urgEl.innerHTML = urg !== "medium" ? `<span style="font-size:11px; color:${urgColors[urg] || "var(--text-muted)"}; font-weight:600;">⚡ ${urg}</span>` : "";
+
+        // Room
+        const roomEl = document.getElementById("nlpRoom");
+        roomEl.innerHTML = data.entities?.room ? `<span style="font-size:11px; color:var(--text-muted);">📍 Room ${data.entities.room}</span>` : "";
+
+        // Time
+        const timeEl = document.getElementById("nlpTime");
+        timeEl.innerHTML = data.entities?.time ? `<span style="font-size:11px; color:var(--text-muted);">🕐 ${data.entities.time}:00h</span>` : "";
+
+      } catch {}
+    }
+
+    // ── Submit ────────────────────────────────────────────────────────
+    document.getElementById("submitBtn").addEventListener("click", async () => {
+      const query = queryEl.value.trim();
+      const btn   = document.getElementById("submitBtn");
+      if (!query) { toast("Please describe your issue.", "error"); return; }
+      if (!sid)   { toast("Please log in first.", "error"); return; }
+      if (query.length < 5) { toast("Please provide more detail about the issue.", "error"); return; }
+
+      btn.disabled = true; btn.textContent = "🔄 Processing…";
       try {
         const res  = await fetch("/submit_request", {
-          method:"POST", headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({ student_id: sid, query })
+          method: "POST", headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ student_id: sid, query })
         });
         const data = await res.json();
         if (data.request_id) {
           showResult(data);
+          document.getElementById("nlpPreview").classList.remove("show");
         } else {
-          toast(data.error || "Failed to submit.","error");
+          toast(data.error || "Failed to submit.", "error");
         }
-      } catch { toast("Server error. Try again.","error"); }
-      finally { btn.disabled=false; btn.textContent="🚀 Submit Request"; }
+      } catch { toast("Server error. Try again.", "error"); }
+      finally { btn.disabled = false; btn.textContent = "🚀 Submit Request"; }
     });
 
     function showResult(d) {
-      document.getElementById("placeholder").style.display="none";
+      document.getElementById("placeholder").style.display = "none";
       document.getElementById("resultPanel").classList.add("show");
+
+      // XSS-safe assignments
       document.getElementById("reqIdBox").textContent = d.request_id;
       window._lastReqId = d.request_id;
-      document.getElementById("rCategory").textContent = d.category || "—";
-      document.getElementById("rTechnician").textContent = d.technician || (d.ai_response ? "AI Answered" : "Not assigned");
-      const t = d.assigned_time ? `Hour ${d.assigned_time}:00` : (d.start_time || "—");
-      document.getElementById("rTime").textContent = t;
-      const sb = document.getElementById("rStatus");
-      sb.innerHTML = `<span class="badge badge-${d.status}">${d.status}</span>`;
-      
-      if (d.ai_response) {
-        document.getElementById("aiAnswerBox").style.display = "block";
-        document.getElementById("aiAnswerText").textContent = d.ai_response;
-      } else {
-        document.getElementById("aiAnswerBox").style.display = "none";
+      setText("rCategory", d.category || "—");
+
+      // Technician label
+      let techLabel = "Not yet assigned";
+      if (d.technician) techLabel = d.technician;
+      else if (d.status === "ai_resolved") techLabel = "✨ AI Resolved";
+      else if (d.status === "emergency")   techLabel = "🚨 Emergency — Contact Warden";
+      setText("rTechnician", techLabel);
+
+      // Time
+      const tLabel = d.assigned_time ? `${d.assigned_time}:00 hrs` : d.start_time || "—";
+      setText("rTime", tLabel);
+
+      // Urgency row
+      if (d.urgency && d.urgency !== "medium") {
+        const urgRow = document.getElementById("urgencyRow");
+        urgRow.style.display = "flex";
+        document.getElementById("rUrgency").innerHTML =
+          `<span class="urgency-tag urgency-${d.urgency}">${d.urgency.toUpperCase()}</span>`;
       }
 
-      if (d.is_duplicate) document.getElementById("dupWarning").style.display="block";
-      toast("Request submitted successfully!","success");
+      // Status badge
+      document.getElementById("rStatus").innerHTML =
+        `<span class="badge badge-${d.status}">${d.status.replace(/_/g," ")}</span>`;
+
+      // AI Response with markdown rendering
+      if (d.ai_response) {
+        document.getElementById("aiAnswerBox").style.display = "block";
+        document.getElementById("aiAnswerText").innerHTML = renderMarkdown(d.ai_response);
+      }
+
+      if (d.is_duplicate) document.getElementById("dupWarning").style.display = "block";
+      toast("Request submitted successfully!", "success");
     }
 
     function copyId() {
       const id = window._lastReqId;
-      if (id) { navigator.clipboard.writeText(id); toast("Request ID copied!","success"); }
+      if (id) { navigator.clipboard.writeText(id); toast("Request ID copied!", "success"); }
     }
 
     function resetForm() {
-      document.getElementById("query").value="";
-      document.getElementById("charCount").textContent="0";
+      queryEl.value = "";
+      document.getElementById("charCount").textContent = "0";
       document.getElementById("resultPanel").classList.remove("show");
-      document.getElementById("dupWarning").style.display="none";
-      document.getElementById("placeholder").style.display="flex";
+      document.getElementById("dupWarning").style.display = "none";
+      document.getElementById("nlpPreview").classList.remove("show");
+      document.getElementById("urgencyRow").style.display = "none";
+      document.getElementById("aiAnswerBox").style.display = "none";
+      document.getElementById("placeholder").style.display = "flex";
     }
   </script>
 </body>
