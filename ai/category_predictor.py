@@ -1,66 +1,74 @@
-from sentence_transformers import SentenceTransformer, util
-import torch
+# ai/category_predictor.py
+# NOTE: This module is kept for reference but is NOT loaded at import time.
+# The active NLP pipeline is in ai/nlp_engine.py (keyword + ML hybrid).
+# SentenceTransformer is not used in production to avoid startup crashes.
 
-# Load AI model (very light)
-model = SentenceTransformer("paraphrase-MiniLM-L6-v2")
+# If you want to enable semantic similarity in future, install:
+#   pip install sentence-transformers
+# and import this module explicitly (not at startup).
 
-# Category definitions
 CATEGORIES = {
     "Electricity": [
         "fan not working", "switch broken", "light fused", "ac not cooling",
-        "socket issue", "electrical wiring problem"
+        "socket issue", "electrical wiring problem", "geyser not working",
     ],
     "Plumbing": [
         "water leakage", "pipe broken", "flush not working", "tap issue",
-        "drain blockage"
+        "drain blockage", "no water supply",
     ],
     "Carpentry": [
-        "door repair", "bed broken", "window jammed", "furniture issue"
+        "door repair", "bed broken", "window jammed", "furniture issue",
+        "cupboard damaged", "hinge broken",
     ],
     "Housekeeping": [
-        "room cleaning", "washroom dirty", "floor not cleaned", "dusting"
+        "room cleaning", "washroom dirty", "floor not cleaned", "dusting",
+        "pest control", "cockroach in room",
     ],
     "WiFi/IT": [
-        "wifi not working", "internet down", "slow network", "lan issue"
+        "wifi not working", "internet down", "slow network", "lan issue",
+        "ums portal down",
     ],
     "Mess/Food": [
-        "bad food", "poor quality", "cold food", "mess complaint"
+        "bad food", "poor quality", "cold food", "mess complaint",
+        "stale food", "unhygienic mess",
     ],
     "Security": [
-        "suspicious activity", "security issue", "lost id", "theft"
+        "suspicious activity", "security issue", "lost id", "theft",
+        "stolen belongings",
     ],
     "Laundry": [
-        "clothes missing", "late laundry", "laundry complaint"
+        "clothes missing", "late laundry", "laundry complaint",
+        "clothes damaged",
     ],
     "Admin": [
-        "fee issue", "room change", "documentation", "certificate request"
-    ]
+        "fee issue", "room change", "documentation", "certificate request",
+        "gate pass",
+    ],
 }
 
-# Pre-encode descriptions
-category_sentences = []
-labels = []
 
-for cat, samples in CATEGORIES.items():
-    for text in samples:
-        category_sentences.append(text)
-        labels.append(cat)
+def predict_category(query: str) -> dict:
+    """
+    Lightweight keyword-based category predictor (no ML model required).
+    Returns category, confidence, and best matching phrase.
+    """
+    q = query.lower()
+    best_cat, best_score, best_phrase = "Admin", 0, ""
 
-category_embeddings = model.encode(category_sentences, convert_to_tensor=True)
-
-def predict_category(query):
-    query_embedding = model.encode(query, convert_to_tensor=True)
-
-    # Compute cosine similarity
-    similarity = util.cos_sim(query_embedding, category_embeddings)[0]
-
-    best_idx = torch.argmax(similarity).item()
-    best_score = similarity[best_idx].item()
-
-    predicted_category = labels[best_idx]
+    for cat, samples in CATEGORIES.items():
+        for phrase in samples:
+            # Count matching words
+            phrase_words = set(phrase.split())
+            query_words  = set(q.split())
+            overlap = len(phrase_words & query_words)
+            score = overlap / max(len(phrase_words), 1)
+            if score > best_score:
+                best_score = score
+                best_cat   = cat
+                best_phrase = phrase
 
     return {
-        "category": predicted_category,
+        "category":   best_cat,
         "confidence": round(float(best_score), 3),
-        "top_match": category_sentences[best_idx]
+        "top_match":  best_phrase,
     }

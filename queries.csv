@@ -1,82 +1,183 @@
 query,category
 My attendance is not updated,Academic
-I want to change my hostel room,Hostel
-How do I pay the fee online,Finance
-When will exam timetable come,Exam
-My portal is not working,IT
-Room light is not working,Hostel
-I need fee receipt,Finance
-My marks are not showing,Academic
+How do I check my attendance on UMS,Academic
 I want to apply for re-evaluation,Academic
-Wifi is not working in hostel,IT
-How to apply for scholarship,Finance
-When is the last date for fee payment,Finance
-I lost my ID card,Administration
-How to register for courses,Academic
-My library books are overdue,Library
-I want to extend my library membership,Library
-How to book a study room in library,Library
-My hostel mess food quality is poor,Hostel
-fan not working,Hostel
-my room fan is not working,Hostel
-light is not working,Hostel
-light fused,Hostel
-switch is broken,Hostel
-my tube light is not working,Hostel
-ac not cooling,Hostel
-water leakage in bathroom,Hostel
-tap is broken,Hostel
-flush is not working,Hostel
-pipe leaking in bathroom,Hostel
-bathroom drainage is blocked,Hostel
-door is broken,Hostel
-cupboard jammed,Hostel
-bed making noise,Hostel
-window is not closing properly,Hostel
-room needs cleaning,Hostel
-pest control required in my room,Hostel
-mosquito issue in hostel,Hostel
-electricity issue in my room,Hostel
-ac not cooling,Hostel
-ac is not cooling,Hostel
-my ac is not cooling properly,Hostel
-ac is running but not cooling,Hostel
-air conditioner not cooling,Hostel
-ac problem in my room,Hostel
-hostel room ac cooling issue,Hostel
-ac cooling problem,Hostel
-ac not working properly,Hostel
-ac malfunctioning,Hostel
-fan not working,Hostel
-my fan is not working,Hostel
-fan stopped working,Hostel
-fan is not working properly,Hostel
-fan making noise,Hostel
-fan working slow,Hostel
-fan speed not working,Hostel
-room fan issue,Hostel
-
-light not working,Hostel
-light fused,Hostel
-tube light not working,Hostel
-room light blinking,Hostel
-switch not working,Hostel
-
-ac not cooling,Hostel
-ac cooling issue,Hostel
-my ac is not cooling,Hostel
-ac is running but not cooling,Hostel
-air conditioner problem,Hostel
-ac making noise,Hostel
-
-water leakage in bathroom,Hostel
-water leaking from pipe,Hostel
-tap broken,Hostel
-flush not working,Hostel
-bathroom drainage blocked,Hostel
-
-door broken,Hostel
-door jammed,Hostel
-cupboard broken,Hostel
-bed broken,Hostel
-window not closing,Hostel
+My marks are not showing on UMS,Academic
+How to register for courses next semester,Academic
+What is the process for branch change,Academic
+I need a bonafide certificate,Academic
+How do I apply for scholarship,Academic
+When is the last date for fee payment,Academic
+How to pay fee online,Academic
+I need fee receipt,Academic
+My result is not updated,Academic
+How to download my marksheet,Academic
+What is the CGPA calculation formula,Academic
+I want to apply for backlog exam,Academic
+When will exam date sheet be released,Academic
+How to access UMS portal,Academic
+I forgot my UMS password,Academic
+My UMS login is not working,Academic
+How to upload assignment on UMS,Academic
+I need a character certificate,Academic
+How to apply for NOC from hostel,Academic
+I need a migration certificate,Academic
+When is the placement drive,Academic
+How to register for campus placement,Academic
+I need internship letter from college,Academic
+Library book is overdue how to pay fine,Academic
+How to issue books from library,Academic
+How to access e-resources in library,Academic
+I want to extend my library membership,Academic
+How to book study room in library,Academic
+My scholarship status is pending,Academic
+Government scholarship documentation needed,Academic
+State scholarship application process,Academic
+I need transfer certificate,Academic
+What documents are needed for admission,Academic
+How to apply for hostel,Academic
+What is hostel fee,Academic
+I need to change my hostel room,Academic
+fan not working in my room,Electricity
+my room fan is not working,Electricity
+fan stopped working,Electricity
+fan making noise,Electricity
+fan working slowly,Electricity
+fan speed is very low,Electricity
+room fan not spinning,Electricity
+fan makes loud noise,Electricity
+fan is wobbling,Electricity
+ceiling fan not working,Electricity
+fan stopped suddenly,Electricity
+light not working in room,Electricity
+tube light fused in my room,Electricity
+room light not working,Electricity
+light is blinking,Electricity
+bulb is fused,Electricity
+switch not working,Electricity
+switch is broken,Electricity
+light switch damaged,Electricity
+plug socket not working,Electricity
+socket has no power,Electricity
+charger point not working,Electricity
+electrical socket damaged,Electricity
+power outlet broken,Electricity
+wiring issue in room,Electricity
+electricity problem in room,Electricity
+power cut in my room only,Electricity
+room has no electricity,Electricity
+ac not cooling in my room,Electricity
+air conditioner not working,Electricity
+ac is running but not cooling,Electricity
+ac temperature not decreasing,Electricity
+ac making noise,Electricity
+ac remote not working,Electricity
+ac leaking water,Electricity
+air conditioner cooling problem,Electricity
+ac is blowing hot air,Electricity
+ac compressor noise,Electricity
+geyser not heating water,Electricity
+geyser not working,Electricity
+hot water not coming from geyser,Electricity
+water heater not working,Electricity
+water leakage in bathroom,Plumbing
+pipe leaking in my room,Plumbing
+tap is broken,Plumbing
+tap leaking,Plumbing
+tap not closing properly,Plumbing
+flush not working,Plumbing
+toilet flush broken,Plumbing
+commode flush issue,Plumbing
+bathroom drainage blocked,Plumbing
+drain is blocked,Plumbing
+water not draining in bathroom,Plumbing
+pipe burst in hostel,Plumbing
+bathroom pipe broken,Plumbing
+water overflow in bathroom,Plumbing
+sink tap leaking,Plumbing
+washroom tap dripping,Plumbing
+no water supply in room,Plumbing
+water pressure very low in room,Plumbing
+sewage smell from drain,Plumbing
+bathroom has foul smell,Plumbing
+toilet seat broken,Plumbing
+door broken in my room,Carpentry
+room door not closing,Carpentry
+door hinge broken,Carpentry
+door lock not working,Carpentry
+door lock damaged,Carpentry
+cupboard door jammed,Carpentry
+almirah not opening,Carpentry
+bed making noise,Carpentry
+bed broken,Carpentry
+bed frame is broken,Carpentry
+table is wobbly,Carpentry
+chair is broken,Carpentry
+furniture is damaged,Carpentry
+window not closing properly,Carpentry
+window glass broken,Carpentry
+window hinge broken,Carpentry
+shelf fallen from wall,Carpentry
+wardrobe hinge broken,Carpentry
+room door handle missing,Carpentry
+paint peeling from wall,Painting
+wall has damp patches,Painting
+wall paint damaged,Painting
+wall color fading,Painting
+moisture on wall,Painting
+seepage from wall,Painting
+stains on ceiling,Painting
+ceiling has water stains,Painting
+room needs repainting,Painting
+wall has cracks,Painting
+room cleaning required,Housekeeping
+room not cleaned today,Housekeeping
+washroom dirty,Housekeeping
+washroom not cleaned,Housekeeping
+floor not mopped,Housekeeping
+common area dirty,Housekeeping
+corridor dirty,Housekeeping
+dustbin overflowing,Housekeeping
+garbage not collected,Housekeeping
+washroom has insects,Housekeeping
+pest control needed in room,Housekeeping
+mosquito problem in hostel,Housekeeping
+cockroach in room,Housekeeping
+ants in my room,Housekeeping
+rats in hostel,Housekeeping
+wifi not working in hostel,IT
+internet not working in my room,IT
+slow internet speed in room,IT
+network connection dropping,IT
+wifi signal very weak,IT
+LAN cable not working,IT
+LAN port issue in room,IT
+no internet since morning,IT
+internet disconnecting frequently,IT
+wifi router issue in my floor,IT
+my portal is not working,IT
+UMS portal is down,IT
+cannot login to student portal,IT
+mess food quality is very poor,Mess
+bad food quality in mess,Mess
+food is cold in mess,Mess
+mess complaint about food,Mess
+mess food not hygienic,Mess
+stale food served in mess,Mess
+mess is very dirty,Mess
+mess timing issue,Mess
+special diet request in mess,Mess
+food quantity is very less,Mess
+I lost my ID card,Admin
+room change request,Admin
+I need documentation help,Admin
+certificate request for bank,Admin
+gate pass required,Admin
+suspicious person in hostel,Security
+theft in hostel room,Security
+security issue near girls hostel,Security
+lost belongings in hostel,Security
+clothes missing from laundry,Laundry
+laundry not returned,Laundry
+laundry is delayed,Laundry
+clothes damaged in laundry,Laundry
